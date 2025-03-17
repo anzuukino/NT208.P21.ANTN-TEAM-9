@@ -1,0 +1,25 @@
+version: '3.7'
+
+services:
+  database:
+    build: ./postgresql
+    ports:
+      - '5432'
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
+      - POSTGRES_DB=app
+  backend:
+      build: ./app
+      # ports:
+      #   - '8888:8888'
+      depends_on:
+        - database
+      environment:
+        - PORT=8888
+  frontend:
+      build: ./frontend
+      ports:
+        - '3000:3000'
+      depends_on:
+        - backend
