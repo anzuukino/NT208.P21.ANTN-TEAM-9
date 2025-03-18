@@ -9,8 +9,11 @@ const auth = async (req, res, next) => {
     }
     try {
         jwt.verify(token, JWT_SECRET, async (err,user) => {
+            if (err){
+                return res.redirect('/login');
+            }
             const data = await getUserByEmail(user.email);
-            if (err || !data) {
+            if (!data) {
                 return res.redirect('/login');
             }
             req.user = data;
