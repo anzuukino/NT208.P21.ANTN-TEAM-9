@@ -6,17 +6,22 @@ services:
     ports:
       - '5432'
     environment:
-      - POSTGRES_USER=admin
+      - POSTGRES_USER=postgresql
+      - POSTGRES_HOST=127.0.0.1
       - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
       - POSTGRES_DB=app
   backend:
-      build: ./app
+      build: ./backend
       # ports:
       #   - '8888:8888'
       depends_on:
         - database
       environment:
         - PORT=8888
+        - POSTGRES_USER=postgresql
+        - POSTGRES_HOST=127.0.0.1
+        - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
+        - POSTGRES_DB=app
   frontend:
       build: ./frontend
       ports:
