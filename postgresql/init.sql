@@ -1,6 +1,6 @@
-GRANT ALL PRIVILEGES ON DATABASE app TO app_database;
+-- GRANT ALL PRIVILEGES ON DATABASE app TO app_database;
 
-\c app_database;
+-- \c app_database;
 
 -- CREATE TABLE submissions (
 --     id SERIAL PRIMARY KEY,                 

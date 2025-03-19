@@ -2,7 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const { signJWT } = require("./jwt_helpers");
 const bcrypt = require("bcrypt");
-const {getUserByEmail, createUser } = require("./db_helpers");
+const {getUserByEmail, createUser, healthcheck } = require("./db_helpers");
 const auth = require("./middleware/auth");
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.get('/api/healthcheck', async (req, res) => {
 });
 
 
-router.post("/login", async (req, res) => {
+router.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await getUserByEmail(email);
     if (!user || !bcrypt.compareSync(password, user.hash_password)) {
@@ -28,7 +28,7 @@ router.post("/login", async (req, res) => {
     res.redirect("/");
 });
 
-router.post("/register", async (req, res) => {
+router.post("/api/register", async (req, res) => {
     try {
 
         const requiredFields = ["fullname", "email", "password", "phone_no", "identify_no"];
@@ -59,12 +59,12 @@ router.post("/register", async (req, res) => {
 });
 
 
-router.get("/logout", (req, res) => {
+router.get("/api/logout", (req, res) => {
     res.clearCookie("token");
     res.redirect("/login");
 });
 
-router.get("/", auth, async (req, res) => {
+router.get("/api", auth, async (req, res) => {
     return res.send(req.user);
 })
 

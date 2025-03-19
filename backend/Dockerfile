@@ -9,7 +9,7 @@ CMD mkdir - p /app/backend
 
 WORKDIR /app/backend
 
-COPY package.json ./
+COPY src/package.json ./
 
 RUN npm i
 

@@ -183,5 +183,6 @@ module.exports = {
     Withdrawal,
     initDB,
     createUser,
-    getUserByEmail
+    getUserByEmail,
+    healthcheck
 };

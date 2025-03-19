@@ -3,9 +3,9 @@ FROM node:20-alpine as build
 
 
 WORKDIR /app
-COPY package*.json ./
+COPY my-app/package*.json ./
 RUN npm install
-COPY . .
+COPY my-app/ .
 RUN npm run build
 
 FROM nginx:stable-alpine
