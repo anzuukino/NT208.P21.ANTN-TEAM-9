@@ -2,7 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const { signJWT } = require("./jwt_helpers");
 const bcrypt = require("bcrypt");
-const {getUserByEmail, createUser, healthcheck } = require("./db_helpers");
+const {getUserByEmail, createUser, healthcheck, donateFund, getBills, createFund,withdrawFund } = require("./db_helpers");
 const auth = require("./middleware/auth");
 
 const router = express.Router();
@@ -58,14 +58,94 @@ router.post("/api/register", async (req, res) => {
     }
 });
 
+router.post("/api/create-fund", auth, async (req, res) => {
+    try {
+        const requiredFields = ["title", "description", "goal", "deadline"];
+        const missingFields = requiredFields.filter(field => !req.body[field]);
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
+        }
+
+        const { title, description, goal, deadline } = req.body;
+
+        const newFund = await createFund(req.user.uid, title, description, goal, deadline);
+
+        if (!newFund) {
+            return res.status(500).json({ error: "Fund creation failed" });
+        }
+
+        res.status(200).json({ message: "Fund created successfully", fund: newFund });
+    } catch (error) {
+        console.error("Fund creation error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.post("/api/donate", auth, async (req, res) => {
+    try{
+        const requiredFields = ["fund_id", "amount"];
+        const missingFields = requiredFields.filter(field => !req.body[field]);
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
+        }
+
+        const { fund_id, amount } = req.body;
+
+        const donate = await donateFund(req.user.uid, fund_id, amount);
+
+        if (!donate) {
+            return res.status(500).json({ error: "Donation failed" });
+        }
+
+        res.status(200).json({ message: "Donation successful", donation: donate });
+
+
+    } catch(error){
+        console.error("Donation error", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+
+});
+
+router.post("/api/withdraw", auth, async (req, res) => {
+    try{
+        const requiredFields = ["fund_id", "reason"];
+        const missingFields = requiredFields.filter(field => !req.body[field]);
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
+        }
+
+        const { fund_id, reason } = req.body;
+
+        const withdraw = await withdrawFund(req.user.uid, fund_id, reason);
+
+        if (!withdraw) {
+            return res.status(500).json({ error: "Withdraw failed" });
+        }
+
+        res.status(200).json({ message: "Withdraw successful", withdraw: withdraw });
+    } catch(error){
+        console.error("Withdraw error", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 
 router.get("/api/logout", (req, res) => {
     res.clearCookie("token");
     res.redirect("/login");
 });
 
-router.get("/api", auth, async (req, res) => {
-    return res.send(req.user);
+router.get("/api/bills", auth, async (req, res) => {
+    const bills = await getBills(req.user.uid);
+    res.json(bills);
+});
+
+router.get("/api/user", auth, async (req, res) => {
+    return res.json(req.user);
 })
 
 module.exports = router;

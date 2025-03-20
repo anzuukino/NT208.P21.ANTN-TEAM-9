@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fund Management</title>
+</head>
+<body>
+    <h1>Fund Management</h1>
+
+    <h2>Register</h2>
+    <form id="registerForm">
+        <input type="text" name="fullname" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="text" name="phone_no" placeholder="Phone No" required>
+        <input type="text" name="identify_no" placeholder="Identify No" required>
+        <button type="submit">Register</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="loginForm">
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <h2>Your Profile</h2>
+    <button id="getUser">Get User Info</button>
+    <pre id="userInfo"></pre>
+
+    <h2>Create Fund</h2>
+    <form id="createFundForm">
+        <input type="text" name="title" placeholder="Title" required>
+        <input type="text" name="description" placeholder="Description" required>
+        <input type="number" name="goal" placeholder="Goal Amount" required>
+        <input type="date" name="deadline" placeholder="Deadline" required>
+        <button type="submit">Create Fund</button>
+    </form>
+
+    <h2>Donate</h2>
+    <form id="donateForm">
+        <input type="number" name="fund_id" placeholder="Fund ID" required>
+        <input type="number" name="amount" placeholder="Amount" required>
+        <button type="submit">Donate</button>
+    </form>
+
+    <h2>Withdraw</h2>
+    <form id="withdrawForm">
+        <input type="number" name="fund_id" placeholder="Fund ID" required>
+        <input type="text" name="reason" placeholder="Reason" required>
+        <button type="submit">Withdraw</button>
+    </form>
+
+    <h2>Your Bills</h2>
+    <button id="getBills">Get Bills</button>
+    <ul id="billsList"></ul>
+
+    <script>
+        async function postData(url, data) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+                credentials: "include"
+            });
+            return response.json();
+        }
+
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(e.target).entries());
+            const result = await postData("/api/register", formData);
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(e.target).entries());
+            const response = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+                credentials: "include"
+            });
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                alert("Login failed");
+            }
+        });
+
+        document.getElementById("getUser").addEventListener("click", async () => {
+            const response = await fetch("/api/user", { credentials: "include" });
+            if (response.ok) {
+                const user = await response.json();
+                document.getElementById("userInfo").textContent = JSON.stringify(user, null, 2);
+            } else {
+                alert("Failed to fetch user info");
+            }
+        });
+
+        document.getElementById("createFundForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(e.target).entries());
+            formData.goal = Number(formData.goal);
+            const result = await postData("/api/create-fund", formData);
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById("donateForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(e.target).entries());
+            formData.amount = Number(formData.amount);
+            const result = await postData("/api/donate", formData);
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById("withdrawForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(e.target).entries());
+            const result = await postData("/api/withdraw", formData);
+            alert(JSON.stringify(result));
+        });
+
+        document.getElementById("getBills").addEventListener("click", async () => {
+            const response = await fetch("/api/bills", { credentials: "include" });
+            const bills = await response.json();
+            const billsList = document.getElementById("billsList");
+            billsList.innerHTML = "";
+            bills.forEach(bill => {
+                const li = document.createElement("li");
+                li.textContent = `Bill ID: ${bill.billID}, Amount: ${bill.amount}`;
+                billsList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+</html>

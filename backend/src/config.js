@@ -7,7 +7,7 @@ const user_db = {
     username: process.env.POSTGRES_USER || 'yuu',
     password: process.env.POSTGRES_PASSWORD || 'test',
     database: process.env.POSTGRES_DB || 'app_database',
-    host: process.env.POSTGRES_HOST || 'postgresql',
+    host: process.env.POSTGRES_HOST || 'localhost',
     port: 5432
 }
 
