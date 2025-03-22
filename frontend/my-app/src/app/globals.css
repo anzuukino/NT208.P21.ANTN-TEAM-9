@@ -24,3 +24,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.glass{
+  -webkit-backdrop-filter: blur(12px) saturate(171%);
+}

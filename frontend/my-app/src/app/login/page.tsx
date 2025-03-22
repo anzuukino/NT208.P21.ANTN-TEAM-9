@@ -5,7 +5,7 @@ import React from "react"
 export default function Home() {
   return (
     <React.Fragment>
-      <div>Creating dashboard</div>
+      <LoginForm></LoginForm>
     </React.Fragment>
   );
 }
