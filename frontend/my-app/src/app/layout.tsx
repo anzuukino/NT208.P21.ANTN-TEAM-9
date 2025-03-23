@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeModeScript } from "flowbite-react";
+// import { ThemeModeScript } from "flowbite-react";
 import "flowbite";
 
 const geistSans = Geist({
