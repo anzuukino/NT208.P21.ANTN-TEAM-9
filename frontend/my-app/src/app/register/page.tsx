@@ -258,7 +258,14 @@ const RegistrationForm = () => {
                     
                   </div>
                   {error && <p className="text-red-500 text-center">{error}</p>}
-                  {success && <p className="text-green-500 text-center">Register successful!</p>}
+                  {success && (
+                    <p className="text-green-500 text-center">
+                      Register successful!{" "}
+                      <a href="/login" className="text-blue-600 underline hover:text-blue-800">
+                        Click here to login
+                      </a>
+                    </p>
+                  )}
                 </form>
               </motion.div>
             )}

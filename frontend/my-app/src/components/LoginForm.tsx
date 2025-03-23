@@ -1,7 +1,8 @@
 "use client";
 import { Inter } from "next/font/google";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import  { useButtonClickAlert, useLogin }  from "@/app/hooks/buttonhelper";
+import { useRouter } from "next/navigation";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -11,8 +12,10 @@ const inter = Inter({
 
 
 export default function LoginForm() {
+  const router = useRouter();
   let [showPassword, setShowPassword] = useState(false);
   const { login, loading, error, success } = useLogin();
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,7 +31,13 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     login(formData.email, formData.password);
+    
   };
+  useEffect(() => {
+    if (success) {
+      router.push("/");
+    }
+  }, [success]);
   return (
     <div className="flex items-center justify-center min-h-screen bg-[url(../../assets/money.jpg)] bg-cover font-[inter]">
       <div className="w-full max-w-lg p-12 bg-white/40   rounded-2xl shadow-lg backdrop-blur-[12px] backdrop-saturate-171 glass" >
@@ -37,7 +46,7 @@ export default function LoginForm() {
         {success && <p className="text-green-500 text-center">Login successful!</p>}
         <p className="text-center text-gray-600 text-sm mt-1">
           Create a fund?{" "}
-          <a href="#" className="text-blue-600 font-semibold hover:underline">
+          <a href="/register" className="text-blue-600 font-semibold hover:underline">
             Click here to register
           </a>
         </p>

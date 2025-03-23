@@ -10,6 +10,8 @@ COPY my-app /app
 ENV CI=true
 ENV PORT=3000
 
+RUN npm run build
+
 CMD [ "npm", "start" ]
 
 EXPOSE 3000
