@@ -10,6 +10,7 @@ services:
       - POSTGRES_HOST=localhost
       - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
       - POSTGRES_DB=app
+    restart: unless-stopped
   backend:
       build: ./backend
       # ports:
@@ -22,12 +23,14 @@ services:
         - POSTGRES_HOST=database
         - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
         - POSTGRES_DB=app
+      restart: unless-stopped
   frontend:
       build: ./frontend
       # ports:
       #   - '3000:80'
       depends_on:
         - backend
+      restart: unless-stopped
   nginx:
       build: ./nginx
       ports:
@@ -36,3 +39,4 @@ services:
         - frontend
         - backend
         - database
+      restart: unless-stopped

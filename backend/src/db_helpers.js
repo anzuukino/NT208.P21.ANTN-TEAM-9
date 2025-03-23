@@ -12,9 +12,8 @@ const sequelize = new Sequelize(user_db.database, user_db.username, user_db.pass
 
 const User = sequelize.define("User", {
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         primaryKey: true,
-        autoIncrement: true,
         allowNull: false,
     },
     firstname: DataTypes.STRING,
@@ -35,7 +34,7 @@ const User = sequelize.define("User", {
 
 const Bill = sequelize.define("Bill", {
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     amount: DataTypes.DECIMAL,
@@ -58,7 +57,7 @@ const Bank = sequelize.define("Bank", {
         autoIncrement: true,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     bankname: DataTypes.STRING,
@@ -73,7 +72,7 @@ const Fund = sequelize.define("Fund", {
         primaryKey: true,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     target_money: DataTypes.DECIMAL,
@@ -105,7 +104,7 @@ const Donation = sequelize.define("Donation", {
         allowNull: false,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     billID: {
@@ -125,7 +124,7 @@ const Withdrawal = sequelize.define("Withdrawal", {
       allowNull: false,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     billID: {
@@ -170,6 +169,7 @@ Withdrawal.belongsTo(Fund, { foreignKey: "fundID" });
 async function createAdminUser() {
     try {
         const adminUser = await User.create({
+            uid: crypto.randomUUID(),
             fullname: "Admin",
             email: "admin@example.com",
             created_at: new Date(),
@@ -215,6 +215,7 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
+            uid: crypto.randomUUID(),
             firstname,
             lastname,
             email,
@@ -251,6 +252,21 @@ async function createFund(userid, title, description, goal, deadline) {
         return fund;
     } catch (error) {
         console.error("Error creating fund:", error);
+        return false;
+    }
+}
+
+async function createAttachment(fundID, type, path) {
+    try {
+        const attachment = await FundAttachment.create(
+            fundID,
+            type,
+            path,
+        );
+
+        return attachment;
+    } catch (error) {
+        console.error("Error creating attachment:", error);
         return false;
     }
 }
@@ -406,7 +422,22 @@ async function withdrawFund(userid, fundid, reason) {
 }
 
 async function getFund(fundid) {
-    return await Fund.findOne({ where: { fundID: fundid } });
+    try {
+        const fund = await Fund.findOne({
+            where: { fundID: fundid },
+            include: [
+                {
+                    model: FundAttachment,
+                    attributes: ["type", "path"]
+                }
+            ]
+        });
+
+        return fund;
+    } catch (error) {
+        console.error("Error fetching fund details:", error);
+        return null;
+    }
 }
 
 async function getBills(userid) {
@@ -415,7 +446,32 @@ async function getBills(userid) {
     });
 }
 
+async function getUserByIDpublic(userid) {
+    const user = await User.findOne({
+        where: { uid: userid },
+        attributes: ["firstname", "lastname"],
+    });
+
+    return user;
+}
+
+async function getUserByIDprivate(userid) {
+    const user = await User.findOne({
+        where: { uid: userid },
+        attributes: { exclude: ["hash_password"] },
+    });
+
+    return user;
+}
+
+async function getAllfund(){
+    const fund = await Fund.findAll();
+    return fund;
+}
+
 module.exports = {
+    getUserByIDprivate,
+    getUserByIDpublic,
     healthcheck,
     initDB,
     getUserByEmail,
@@ -424,5 +480,7 @@ module.exports = {
     donateFund,
     withdrawFund,
     getFund,
-    getBills
+    getBills,
+    createAttachment,
+    getAllfund
 };

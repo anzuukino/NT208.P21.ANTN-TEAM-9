@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Inter, Nunito } from "next/font/google";
 import Script from "next/script";
 import  { useRegister }  from "@/app/hooks/buttonhelper";
+import { checkLogin } from "@/app/hooks/helper";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 const nunito = Nunito({ subsets: ["latin"], display: "swap", variable: "--font-nunito" });
@@ -91,6 +92,17 @@ const RegistrationForm = () => {
       console.log("Button HIDE");
     }
   }
+
+  useEffect(() => {
+    const checkUserLogin = async () => {
+      const uid = await checkLogin();
+      if (uid) {
+        router.push("/");
+      }
+    };
+
+    checkUserLogin();
+  }, [router]);
   return (
     <div className="min-h-screen flex items-center justify-left bg-[url(../../assets/register-bg.jpg)] bg-cover font-[nunito]">
       <div className="min-h-screen w-[50%] p-24 bg-[#FAF9F8] rounded-xl shadow-md">
@@ -111,26 +123,26 @@ const RegistrationForm = () => {
                 <form className="mt-20 flex-col flex gap-12">
                   <div className="grid grid-cols-2 gap-12">
                     <div>
-                      <label className="block text-md font-bold text-gray-700">
+                      <label className="block text-md font-bold text-gray-900">
                         First Name
                       </label>
                       <input
                         type="text"
                         name="firstname"
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700 text-gray-900"
                         placeholder="John"
                         onChange={handleChange}
                         value = {formData.firstname}
                       />
                     </div>
                     <div>
-                      <label className="block text-md font-bold text-gray-700">
+                      <label className="block text-md font-bold text-gray-900">
                         Last Name
                       </label>
                       <input
                         type="text"
                         name="lastname"
-                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700 text-gray-900"
                         placeholder="Doe"
                         onChange={handleChange}
                         value = {formData.lastname}
@@ -138,27 +150,27 @@ const RegistrationForm = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-md font-bold text-gray-700">
+                    <label className="block text-md font-bold text-gray-900">
                       Email address
                     </label>
                     <input
                       type="text"
                       name="email"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700 text-gray-900"
                       placeholder="example@abc.com"
                       onChange={handleChange}
                       value={formData.email}
                     />
                   </div>
                   <div className="relative">
-                    <label className="block text-md font-bold text-gray-700">
+                    <label className="block text-md font-bold text-gray-900">
                       Password
                     </label>
                     <input
                       id = "password"
                       name = "password"
                       type={isVisible ? "text" : "password"}
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700 text-gray-900"
                       placeholder="Use a secure password"
                       onChange={handleChange}
                       value={formData.password}
@@ -172,14 +184,14 @@ const RegistrationForm = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-md font-bold text-gray-700 relative">
+                    <label className="block text-md font-bold text-gray-900 relative">
                       Confirm password
                     </label>
                     <input
                       id = "conf-password"
                       name = "conf_password"
                       type={isVisible ? "text" : "password"}
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700s"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700 text-gray-900s"
                       placeholder="Confirm password"
                       onChange={handleChange}
                       value={formData.conf_password}
@@ -206,37 +218,37 @@ const RegistrationForm = () => {
                 <h2 className="text-4xl font-medium text-left mb-4 mt-8 text-[#362727] font-[Inter]">Additional information</h2>
                 <form className="mt-20 flex-col flex gap-12">
                   <div className="mt-2">
-                    <label className="block text-md font-bold text-gray-700">
+                    <label className="block text-md font-bold text-gray-900">
                       Postal Code
                     </label>
                     <input
                       type="text"
                       name="postalcode"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
                       onChange={handleChange}
                       value={formData.postalcode}
                     />
                   </div>
                   <div className="mt-2">
-                    <label className="block text-md font-bold text-gray-700">
+                    <label className="block text-md font-bold text-gray-900">
                       Phone number
                     </label>
                     <input
                       type="text"
                       name="phone_no"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
                       onChange={handleChange}
                       value={formData.phone_no}
                     />
                   </div>
                   <div className="mt-2">
-                    <label className="block text-md font-bold text-gray-700">
+                    <label className="block text-md font-bold text-gray-900">
                       ID no.
                     </label>
                     <input
                       type="text"
                       name="identify_no"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
                       onChange={handleChange}
                       value={formData.identify_no}
                     />

@@ -1,52 +1,81 @@
+"use client";
+
 import Image from "next/image";
-import { MyNavBar } from "@/components/MyNavBar";
-import LoginForm from "@/components/LoginForm";
-import React from "react"
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { checkLogin } from "@/app/hooks/helper";
 import Footer from "@/components/Footer";
 
+interface User {
+  firstname: string;
+  lastname: string;
+}
+
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { uid } = await checkLogin();
+        if (!uid) return;
+
+        const response = await fetch(`/api/user/${uid}`);
+        if (!response.ok) throw new Error("Failed to fetch user data");
+
+        const userData: User = await response.json();
+        setUser(userData);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
-    {/* Navbar */}
-    <nav className="sticky top-0 bg-white shadow-lg py-3 pl-10 pr-10 w-full">
-      <div className="container mx-auto flex justify-between items-center">
-        {/* Left Side */}
-        <div className="flex items-center space-x-6">
-          <Link href="/about" className="text-gray-700 flex items-center space-x-1 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-            About
-          </Link>
+      {/* Navbar */}
+      <nav className="sticky top-0 bg-white shadow-lg py-3 pl-10 pr-10 w-full">
+        <div className="container mx-auto flex justify-between items-center">
+          {/* Left Side */}
+          <div className="flex items-center space-x-6">
+            <Link href="/about" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+              About
+            </Link>
+            <Link href="/donate" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+              Donate
+            </Link>
+            <Link href="/createfund" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+              Fundraise
+            </Link>
+          </div>
 
-          <Link href="/donate" className="text-gray-700 flex items-center space-x-1 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-            Donate
-          </Link>
+          {/* Logo */}
+          <Image src="/file.svg" width={25} height={25} alt="logo" />
 
-          <Link href="/create-fund" className="text-gray-700 flex items-center space-x-1 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-            Fundraise
-          </Link>
+          {/* Right Side */}
+          <div className="flex items-center space-x-6">
+            {user ? (
+              <Link href="/profile" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+                {user.firstname} {user.lastname}
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+                  Login
+                </Link>
+                <Link href="/register" className="text-white bg-green-600 hover:bg-green-800 px-3 py-1 rounded-lg">
+                  Start your FundMe
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-        {/* Logo */}
-        <Image src="/file.svg" width={25} height={25} alt="logo">
-        </Image>
-        {/* Right Side */}
-        <div className="flex items-center space-x-6">
-        <Link href="/profile" className="text-gray-700 flex items-center space-x-1 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-            Profile
-          </Link>
+      </nav>
 
-          <Link href="/login" className="text-gray-700 flex items-center space-x-1 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-            Login
-          </Link>
-
-          <Link href="/register" className="text-white bg-green-600 border-round flex items-center space-x-1 hover:bg-green-800 px-3 py-1 rounded-lg">
-            Start your FundMe
-          </Link>
-        </div>
-      </div>
-    </nav>
-    {/* Footer */}
-    <Footer />
-    
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
