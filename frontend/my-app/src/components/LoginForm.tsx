@@ -41,7 +41,7 @@ export default function LoginForm() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-[url(../../assets/money.jpg)] bg-cover font-[inter]">
       <div className="w-full max-w-lg p-12 bg-white/40   rounded-2xl shadow-lg backdrop-blur-[12px] backdrop-saturate-171 glass" >
-        <h2 className="text-3xl font-bold text-center text-gray-900">Log in</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-900">Login</h2>
         {error && <p className="text-red-500 text-center">{error}</p>}
         {success && <p className="text-green-500 text-center">Login successful!</p>}
         <p className="text-center text-gray-600 text-sm mt-1">
