@@ -17,7 +17,8 @@ const User = sequelize.define("User", {
         autoIncrement: true,
         allowNull: false,
     },
-    fullname: DataTypes.STRING,
+    firstname: DataTypes.STRING,
+    lastname: DataTypes.STRING,
     created_at: DataTypes.DATE,
     email: {
         type: DataTypes.STRING,
@@ -29,6 +30,7 @@ const User = sequelize.define("User", {
     phone_no: DataTypes.STRING,
     identify_no: DataTypes.STRING,
     cash: DataTypes.DECIMAL,
+    postal_code: DataTypes.STRING,
 }, { tableName: "users", timestamps: false });
 
 const Bill = sequelize.define("Bill", {
@@ -209,12 +211,13 @@ async function getUserByEmail(email) {
     return await User.findOne({ where: { email } });
 }
 
-async function createUser(fullname, email, password, phone_no, identify_no, profile_pic = null) {
+async function createUser(firstname, lastname, email, password, phone_no, identify_no, postalcode, profile_pic = null) {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            fullname,
+            firstname,
+            lastname,
             email,
             hash_password: hashedPassword,
             phone_no,
@@ -222,6 +225,7 @@ async function createUser(fullname, email, password, phone_no, identify_no, prof
             profile_pic,
             created_at: new Date(),
             cash: 0,
+            postalcode
         });
 
         return user;

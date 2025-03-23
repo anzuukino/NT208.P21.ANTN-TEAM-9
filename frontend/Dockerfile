@@ -1,17 +1,15 @@
-# Use official Nginx as the base image
-FROM nginx:alpine
+# 1. For build React app
+FROM node:lts
+# Set working directory
+WORKDIR /app
+#
+COPY my-app/*.json /app/
+# Same as npm install
+RUN npm ci --legacy-peer-deps
+COPY my-app /app
+ENV CI=true
+ENV PORT=3000
 
-# Set the working directory to /usr/share/nginx/html
-WORKDIR /usr/share/nginx/html
+CMD [ "npm", "start" ]
 
-# Copy your HTML frontend to the container
-COPY index.html /usr/share/nginx/html/
-
-# Copy the custom Nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000

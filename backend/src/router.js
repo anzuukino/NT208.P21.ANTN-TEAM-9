@@ -21,7 +21,7 @@ router.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await getUserByEmail(email);
     if (!user || !bcrypt.compareSync(password, user.hash_password)) {
-        return res.status(401).send("Invalid email or password");
+        return res.status(401).json({error:"Invalid email or password"});
     }
     const token = signJWT({ email });
     res.cookie("token", token, { httpOnly: true });
@@ -31,21 +31,21 @@ router.post("/api/login", async (req, res) => {
 router.post("/api/register", async (req, res) => {
     try {
 
-        const requiredFields = ["fullname", "email", "password", "phone_no", "identify_no"];
+        const requiredFields = ["firstname","lastname" , "postalcode", "email", "password", "phone_no", "identify_no"];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
         }
 
-        const { fullname, email, password, phone_no, identify_no, profile_pic } = req.body;
+        const { firstname, lastname, postalcode, email, password, phone_no, identify_no } = req.body;
 
         const existingUser = await getUserByEmail(email);
         if (existingUser) {
             return res.status(400).json({ error: "User already exists" });
         }
 
-        const newUser = await createUser(fullname, email, password, phone_no, identify_no, profile_pic);
+        const newUser = await createUser(firstname, lastname, email, password, phone_no, identify_no, postalcode);
 
         if (!newUser) {
             return res.status(500).json({ error: "User registration failed" });
@@ -66,8 +66,14 @@ router.post("/api/create-fund", auth, async (req, res) => {
         if (missingFields.length > 0) {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
         }
+        
 
         const { title, description, goal, deadline } = req.body;
+        goal = parseFloat(goal);
+        if (!Number.isFinite(goal) || goal <= 0) {
+            return res.status(400).json({ error: "Goal must be a positive number." });
+          }
+
 
         const newFund = await createFund(req.user.uid, title, description, goal, deadline);
 
@@ -92,6 +98,11 @@ router.post("/api/donate", auth, async (req, res) => {
         }
 
         const { fund_id, amount } = req.body;
+
+        amount = parseFloat(amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            return res.status(400).json({ error: "Amount must be a positive number." });
+          }
 
         const donate = await donateFund(req.user.uid, fund_id, amount);
 
@@ -141,7 +152,7 @@ router.get("/api/logout", (req, res) => {
 
 router.get("/api/bills", auth, async (req, res) => {
     const bills = await getBills(req.user.uid);
-    res.json(bills);
+    return res.json(bills);
 });
 
 router.get("/api/user", auth, async (req, res) => {

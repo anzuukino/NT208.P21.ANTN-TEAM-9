@@ -5,16 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation"; // Correct import
 import { motion, AnimatePresence } from "framer-motion";
 import { Inter, Nunito } from "next/font/google";
 import Script from "next/script";
+import  { useRegister }  from "@/app/hooks/buttonhelper";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  variable: "--font-nunito",
-});
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+const nunito = Nunito({ subsets: ["latin"], display: "swap", variable: "--font-nunito" });
 
 const RegistrationForm = () => {
   const router = useRouter();
@@ -23,6 +17,26 @@ const RegistrationForm = () => {
   const [isVisible, setShowHide] = useState(false);
   const [step, setStep] = useState(1);
   const [step1Completed, setStep1Completed] = useState(false);
+  const { register, loading, error, success } = useRegister();
+  
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    postalcode: "",
+    email: "",
+    password: "",
+    phone_no: "",
+    identify_no: "",
+    conf_password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
 
   // Redirect to Step 1 if Step 2 is accessed without completion
   useEffect(() => {
@@ -36,6 +50,7 @@ const RegistrationForm = () => {
   const nextStep = (e: React.FormEvent) => {
     e.preventDefault();
     setStep1Completed(true);
+    localStorage.setItem("step1", "completed");
     router.push("?step=2");
   };
 
@@ -46,7 +61,12 @@ const RegistrationForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted!");
+    if (formData.password !== formData.conf_password) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    register(formData);
   };
 
   // Animation variants
@@ -96,8 +116,11 @@ const RegistrationForm = () => {
                       </label>
                       <input
                         type="text"
+                        name="firstname"
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
                         placeholder="John"
+                        onChange={handleChange}
+                        value = {formData.firstname}
                       />
                     </div>
                     <div>
@@ -106,8 +129,11 @@ const RegistrationForm = () => {
                       </label>
                       <input
                         type="text"
+                        name="lastname"
                         className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
                         placeholder="Doe"
+                        onChange={handleChange}
+                        value = {formData.lastname}
                       />
                     </div>
                   </div>
@@ -117,8 +143,11 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       type="text"
+                      name="email"
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
                       placeholder="example@abc.com"
+                      onChange={handleChange}
+                      value={formData.email}
                     />
                   </div>
                   <div className="relative">
@@ -127,9 +156,12 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       id = "password"
+                      name = "password"
                       type={isVisible ? "text" : "password"}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700"
                       placeholder="Use a secure password"
+                      onChange={handleChange}
+                      value={formData.password}
                     />
                     <div
                       id="show-password"
@@ -145,9 +177,12 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       id = "conf-password"
+                      name = "conf_password"
                       type={isVisible ? "text" : "password"}
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-xl focus:border-green-600 focus:ring-green-700s"
                       placeholder="Confirm password"
+                      onChange={handleChange}
+                      value={formData.conf_password}
                     />
                   </div>
                   <button
@@ -176,7 +211,10 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       type="text"
+                      name="postalcode"
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      onChange={handleChange}
+                      value={formData.postalcode}
                     />
                   </div>
                   <div className="mt-2">
@@ -185,7 +223,10 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       type="text"
+                      name="phone_no"
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      onChange={handleChange}
+                      value={formData.phone_no}
                     />
                   </div>
                   <div className="mt-2">
@@ -194,7 +235,10 @@ const RegistrationForm = () => {
                     </label>
                     <input
                       type="text"
+                      name="identify_no"
                       className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                      onChange={handleChange}
+                      value={formData.identify_no}
                     />
                   </div>
                   <div className="mt-6 flex justify-between">
@@ -207,10 +251,14 @@ const RegistrationForm = () => {
                     <button
                       onClick={handleSubmit}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      disabled={loading}
                     >
-                      Register
+                      {loading ? "Register..." : "Register"}
                     </button>
+                    
                   </div>
+                  {error && <p className="text-red-500 text-center">{error}</p>}
+                  {success && <p className="text-green-500 text-center">Register successful!</p>}
                 </form>
               </motion.div>
             )}
