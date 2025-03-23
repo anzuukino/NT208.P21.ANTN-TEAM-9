@@ -68,7 +68,7 @@ router.post("/api/create-fund", auth, async (req, res) => {
         }
         
 
-        const { title, description, goal, deadline } = req.body;
+        let { title, description, goal, deadline } = req.body;
         goal = parseFloat(goal);
         if (!Number.isFinite(goal) || goal <= 0) {
             return res.status(400).json({ error: "Goal must be a positive number." });
@@ -97,7 +97,7 @@ router.post("/api/donate", auth, async (req, res) => {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
         }
 
-        const { fund_id, amount } = req.body;
+        let { fund_id, amount } = req.body;
 
         amount = parseFloat(amount);
         if (!Number.isFinite(amount) || amount <= 0) {
@@ -144,6 +144,13 @@ router.post("/api/withdraw", auth, async (req, res) => {
     }
 });
 
+router.get("/api/fund/:fund_id", auth, async (req, res) => {
+    const fund = await getFund(req.params.fund_id);
+    if (!fund) {
+        return res.status(404).json({ error: "Fund not found" });
+    }
+    return res.json(fund);
+});
 
 router.get("/api/logout", (req, res) => {
     res.clearCookie("token");

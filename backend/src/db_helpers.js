@@ -66,12 +66,16 @@ const Bank = sequelize.define("Bank", {
 }, { tableName: "banks", timestamps: false });
 
 const Fund = sequelize.define("Fund", {
-    fid: {
-        type: DataTypes.INTEGER,
+    fundID: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        unique: true,
         primaryKey: true,
-        autoIncrement: true,
     },
-    uid: DataTypes.INTEGER,
+    uid: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     target_money: DataTypes.DECIMAL,
     current_money: DataTypes.DECIMAL,
     created_at: DataTypes.DATE,
@@ -82,8 +86,8 @@ const Fund = sequelize.define("Fund", {
 }, { tableName: "funds", timestamps: false });
 
 const FundAttachment = sequelize.define("FundAttachment", {
-    fid: {
-        type: DataTypes.INTEGER,
+    fundID: {
+        type: DataTypes.UUID,
         allowNull: false,
     },
     type: DataTypes.STRING,
@@ -96,8 +100,8 @@ const Donation = sequelize.define("Donation", {
         primaryKey: true,
         autoIncrement: true,
     },
-    fID: {
-        type: DataTypes.INTEGER,
+    fundID: {
+        type: DataTypes.UUID,
         allowNull: false,
     },
     uid: {
@@ -116,8 +120,8 @@ const Withdrawal = sequelize.define("Withdrawal", {
       primaryKey: true,
       autoIncrement: true,
     },
-    fID: {
-      type: DataTypes.INTEGER,
+    fundID: {
+      type: DataTypes.UUID,
       allowNull: false,
     },
     uid: {
@@ -128,23 +132,24 @@ const Withdrawal = sequelize.define("Withdrawal", {
       type: DataTypes.UUID,
       allowNull: false,
     },
-  }, { tableName: "withdrawal", timestamps: false });
+}, { tableName: "withdrawal", timestamps: false });
 
 
+// Relationships
 User.hasMany(Bill, { foreignKey: "uid" });
 Bill.belongsTo(User, { foreignKey: "uid" });
 
-User.hasMany(Bank, { foreignKey: "uid" });
-Bank.belongsTo(User, { foreignKey: "uid" });
+// User.hasMany(Bank, { foreignKey: "uid" });
+// Bank.belongsTo(User, { foreignKey: "uid" });
 
 User.hasMany(Fund, { foreignKey: "uid" });
 Fund.belongsTo(User, { foreignKey: "uid" });
 
-Fund.hasMany(FundAttachment, { foreignKey: "fid" });
-FundAttachment.belongsTo(Fund, { foreignKey: "fid" });
+Fund.hasMany(FundAttachment, { foreignKey: "fundID" });
+FundAttachment.belongsTo(Fund, { foreignKey: "fundID" });
 
-Fund.hasMany(Donation, { foreignKey: "fID" });
-Donation.belongsTo(Fund, { foreignKey: "fID" });
+Fund.hasMany(Donation, { foreignKey: "fundID" });
+Donation.belongsTo(Fund, { foreignKey: "fundID" });
 
 User.hasMany(Donation, { foreignKey: "uid" });
 Donation.belongsTo(User, { foreignKey: "uid" });
@@ -152,20 +157,14 @@ Donation.belongsTo(User, { foreignKey: "uid" });
 User.hasMany(Withdrawal, { foreignKey: "uid" });
 Withdrawal.belongsTo(User, { foreignKey: "uid" });
 
-// Bank.hasMany(Bill, { foreignKey: "billID" });
-// Bill.belongsTo(Bank, { foreignKey: "billID" });
-
 Bill.hasOne(Donation, { foreignKey: "billID" });
 Donation.belongsTo(Bill, { foreignKey: "billID" });
 
 Bill.hasOne(Withdrawal, { foreignKey: "billID" });
 Withdrawal.belongsTo(Bill, { foreignKey: "billID" });
 
-Fund.hasMany(Withdrawal, { foreignKey: "fID" });
-Withdrawal.belongsTo(Fund, { foreignKey: "fID" });
-
-Fund.hasMany(Donation, { foreignKey: "fID" });
-Donation.belongsTo(Fund, { foreignKey: "fID" });
+Fund.hasMany(Withdrawal, { foreignKey: "fundID" });
+Withdrawal.belongsTo(Fund, { foreignKey: "fundID" });
 
 
 async function createAdminUser() {
@@ -211,7 +210,7 @@ async function getUserByEmail(email) {
     return await User.findOne({ where: { email } });
 }
 
-async function createUser(firstname, lastname, email, password, phone_no, identify_no, postalcode, profile_pic = null) {
+async function createUser(firstname, lastname, email, password, phone_no, identify_no, postal_code, profile_pic = null) {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -225,7 +224,7 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
             profile_pic,
             created_at: new Date(),
             cash: 0,
-            postalcode
+            postal_code
         });
 
         return user;
@@ -246,12 +245,13 @@ async function createFund(userid, title, description, goal, deadline) {
             title,
             done: false,
             deadline,
+            fundID: crypto.randomUUID(),
         });
-        
+
         return fund;
-    }catch (error) {
+    } catch (error) {
         console.error("Error creating fund:", error);
-        return false
+        return false;
     }
 }
 
@@ -259,66 +259,64 @@ async function donateFund(userid, fundid, amount) {
     const transaction = await sequelize.transaction();
     try {
         const fund = await Fund.findOne({
-            where: { fid: fundid },
-            lock: transaction.LOCK.UPDATE,
-            transaction, 
+            where: { fundID: fundid },
+            lock: { level: transaction.LOCK.UPDATE, of: Fund },
+            transaction,
         });
-    
+
         if (!fund) {
             await transaction.rollback();
             console.log("Fund not found");
             return false;
         }
-    
-        const user = await User.findOne({ 
+
+        const user = await User.findOne({
             where: { uid: userid },
-            lock: transaction.LOCK.UPDATE,
+            lock: { level: transaction.LOCK.UPDATE, of: User },
             transaction
         });
-    
+
         if (!user) {
             await transaction.rollback();
             console.log("User not found");
             return false;
         }
-    
+
         if (user.cash < amount) {
             await transaction.rollback();
-            console.log(user.cash, amount);
             console.log("Insufficient funds");
             return false;
         }
-    
+
         await User.update(
             { cash: user.cash - amount },
             { where: { uid: userid }, transaction }
         );
-    
+
         await Fund.update(
             { current_money: fund.current_money + amount },
-            { where: { fid: fundid }, transaction }
+            { where: { fundID: fundid }, transaction }
         );
 
         const date = new Date();
+        const billID = crypto.randomUUID();
 
         const bill = await Bill.create({
             amount: amount,
             transaction_type: "donation",
             uid: userid,
-            billID: crypto.randomUUID(),
+            billID,
             created_at: date,
             reason: "Donation",
             money_after: user.cash - amount,
         }, { transaction });
 
-        const donation = await Donation.create({
-            fID: fundid,
+        await Donation.create({
+            fundID: fundid,
             uid: userid,
-            billID: bill.billID,
+            billID,
         }, { transaction });
 
-        
-    
         await transaction.commit();
         return bill;
     } catch (error) {
@@ -326,44 +324,52 @@ async function donateFund(userid, fundid, amount) {
         await transaction.rollback();
         return false;
     }
-    
 }
 
-async function withdrawFund(userid, fundid,  reason) {
+async function withdrawFund(userid, fundid, reason) {
     const transaction = await sequelize.transaction();
     try {
         const fund = await Fund.findOne({
-            where: { fid: fundid },
-            lock: transaction.LOCK.UPDATE,
+            where: { fundID: fundid },
+            lock: { level: transaction.LOCK.UPDATE, of: Fund },
             transaction,
         });
 
         if (!fund) {
             await transaction.rollback();
+            console.log("Fund not found");
             return false;
         }
 
-        if (fund.uid !== userid || fund.current_money < fund.target_money) {
+        if (fund.uid !== userid) {
             await transaction.rollback();
+            console.log("User is not the fund owner");
             return false;
         }
 
-        let total_donation = fund.current_money;
+        if (fund.current_money < fund.target_money) {
+            await transaction.rollback();
+            console.log("Fund goal not reached");
+            return false;
+        }
 
         const user = await User.findOne({
             where: { uid: userid },
-            lock: transaction.LOCK.UPDATE,
+            lock: { level: transaction.LOCK.UPDATE, of: User },
             transaction,
         });
 
         if (!user) {
             await transaction.rollback();
+            console.log("User not found");
             return false;
         }
 
+        const total_donation = fund.current_money;
+
         await Fund.update(
             { done: true },
-            { where: { fid: fundid }, transaction }
+            { where: { fundID: fundid }, transaction }
         );
 
         await User.update(
@@ -371,27 +377,27 @@ async function withdrawFund(userid, fundid,  reason) {
             { where: { uid: userid }, transaction }
         );
 
-        let date = new Date();
+        const date = new Date();
+        const billID = crypto.randomUUID();
 
         const bill = await Bill.create({
             amount: total_donation,
             transaction_type: "withdrawal",
             uid: userid,
-            billID: crypto.randomUUID(),
+            billID,
             created_at: date,
             reason: reason,
             money_after: user.cash + total_donation,
         }, { transaction });
 
-        const withdrawing = await Withdrawal.create({
-            fID: fundid,
-            billID: bill.billID,
+        await Withdrawal.create({
+            fundID: fundid,
+            billID,
             uid: userid,
         }, { transaction });
 
         await transaction.commit();
         return bill;
-        
     } catch (error) {
         console.error("Error withdrawing:", error);
         await transaction.rollback();
@@ -399,27 +405,24 @@ async function withdrawFund(userid, fundid,  reason) {
     }
 }
 
-async function getBills(userid){
-    return await Bill.findAll({
-        where: { uid: userid },
-    })
+async function getFund(fundid) {
+    return await Fund.findOne({ where: { fundID: fundid } });
 }
 
+async function getBills(userid) {
+    return await Bill.findAll({
+        where: { uid: userid },
+    });
+}
 
-module.exports = { 
-    sequelize,
-    User,
-    Bank,
-    Fund,
-    FundAttachment,
-    Donation,
-    Withdrawal,
-    initDB,
-    createUser,
-    getUserByEmail,
+module.exports = {
     healthcheck,
+    initDB,
+    getUserByEmail,
+    createUser,
+    createFund,
     donateFund,
     withdrawFund,
-    createFund,
-    getBills,
+    getFund,
+    getBills
 };
