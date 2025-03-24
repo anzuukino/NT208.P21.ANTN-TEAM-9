@@ -113,7 +113,7 @@ const DonatePage = () => {
                 </div>
 
                 <button
-                  onClick={() => router.push(`/fund/${fund.fundID}`)}
+                  onClick={() => router.push(`/fund?fund=${fund.fundID}`)}
                   className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
                 >
                   View Fund

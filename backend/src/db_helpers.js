@@ -170,7 +170,8 @@ async function createAdminUser() {
     try {
         const adminUser = await User.create({
             uid: crypto.randomUUID(),
-            fullname: "Admin",
+            firstname: "Admin",
+            lastname: "User",
             email: "admin@example.com",
             created_at: new Date(),
             profile_pic: null,

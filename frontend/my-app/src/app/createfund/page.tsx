@@ -29,8 +29,8 @@ const CreateFund = () => {
   useEffect(() => {
     const checkUserLogin = async () => {
       const uid = await checkLogin();
-      if (uid) {
-        router.push("/");
+      if (!uid) {
+        router.push("/login");
       }
     };
 

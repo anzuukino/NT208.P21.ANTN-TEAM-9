@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { checkLogin } from "@/app/hooks/helper";
 import Footer from "@/components/Footer";
 
@@ -13,6 +14,7 @@ interface User {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -32,6 +34,18 @@ export default function Home() {
 
     fetchUser();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (!response.ok) throw new Error("Logout failed");
+
+      setUser(null);
+      router.push("/"); // Redirect to home after logout
+    } catch {
+      alert("Failed to log out. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -57,9 +71,17 @@ export default function Home() {
           {/* Right Side */}
           <div className="flex items-center space-x-6">
             {user ? (
-              <Link href="/profile" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
-                {user.firstname} {user.lastname}
-              </Link>
+              <>
+                <Link href="/profile" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
+                  {user.firstname} {user.lastname}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-white bg-red-500 hover:bg-red-700 px-3 py-1 rounded-lg"
+                >
+                  Logout
+                </button>
+              </>
             ) : (
               <>
                 <Link href="/login" className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg">
@@ -79,3 +101,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -21,8 +21,8 @@ const ProfilePage = () => {
 
     const fetchUserProfile = async () => {
       try {
-        const uid = await checkLogin();
-        const response = await fetch(`/api/user/auth/${uid}`);
+        const datares = await checkLogin();
+        const response = await fetch(`/api/user/auth/${datares.uid}`);
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const data = await response.json();

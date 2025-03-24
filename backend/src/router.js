@@ -217,9 +217,17 @@ router.get("/api/user/auth/:uid", auth, async (req, res) => {
     return res.json(user);
 });
 
-router.get("/api/logout", (req, res) => {
-    res.clearCookie("token");
+router.post("/api/logout", (req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        path: "/", 
+    });
+
+    return res.status(200).json({ message: "Logged out successfully" });
 });
+
 
 router.get("/api/bills", auth, async (req, res) => {
     const bills = await getBills(req.user.uid);
