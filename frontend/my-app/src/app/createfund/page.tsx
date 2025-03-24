@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {useSubmitForm} from "@/app/hooks/buttonhelper";
+import {checkLogin} from "@/app/hooks/helper";
 
 const CreateFund = () => {
   const router = useRouter();
@@ -24,6 +25,17 @@ const CreateFund = () => {
   useEffect(() => {
     setStep(stepParam);
   }, [stepParam]);
+
+  useEffect(() => {
+    const checkUserLogin = async () => {
+      const uid = await checkLogin();
+      if (uid) {
+        router.push("/");
+      }
+    };
+
+    checkUserLogin();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
