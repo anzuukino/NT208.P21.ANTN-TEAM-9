@@ -73,16 +73,15 @@ Ensure you have the following installed:
 ### Steps to Run the Project
 1. Clone the repository:
    ```sh
-   git clone <repo_url>
-   cd <project_directory>
+   git clone https://github.com/anzuukino/NT208.P21.ANTN-TEAM-9
+   cd NT208.P21.ANTN-TEAM-9
    ```
 2. Start the services using Docker Compose:
    ```sh
    docker-compose up --build
    ```
 3. Access the application:
-   - Frontend: `http://localhost:3000`
-   - Backend: `http://localhost:5000`
+   - `http://localhost:3000`
    - Database: PostgreSQL running inside a container
 
 ## API Endpoints (Backend)
