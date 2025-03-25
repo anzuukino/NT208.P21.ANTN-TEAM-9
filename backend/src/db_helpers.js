@@ -311,7 +311,7 @@ async function donateFund(userid, fundid, amount) {
         );
 
         await Fund.update(
-            { current_money: fund.current_money + amount },
+            { current_money: Number(fund.current_money) + Number(amount) },
             { where: { fundID: fundid }, transaction }
         );
 
@@ -444,6 +444,16 @@ async function getFund(fundid) {
 async function getBills(userid) {
     return await Bill.findAll({
         where: { uid: userid },
+        include: [
+            {
+                model: Donation,
+                attributes: ["fundID"]
+            },
+            {
+                model: Withdrawal,
+                attributes: ["fundID"]
+            }
+        ]
     });
 }
 

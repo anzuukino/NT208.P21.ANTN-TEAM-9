@@ -14,7 +14,9 @@ interface Bill {
   created_at: string;
   reason: string;
   money_after: string;
-  fundID: string;
+  Donation: {
+    fundID: string;
+  }
 }
 
 const BillsPage = () => {
@@ -89,9 +91,9 @@ const BillsPage = () => {
                     Created: {new Date(bill.created_at).toLocaleString()}
                   </p>
 
-                  {bill.fundID && (
+                  {bill.Donation.fundID && (
                     <Link
-                      href={`/fund/${bill.fundID}`}
+                      href={`/fund?fund=${bill.Donation.fundID}`}
                       className="text-blue-600 hover:underline"
                     >
                       View Fund

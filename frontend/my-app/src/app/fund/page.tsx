@@ -116,7 +116,7 @@ const FundPage = () => {
         {/* Right Side: Progress & Actions */}
         <div className="md:w-1/3 p-6 bg-gray-100 rounded-lg">
           <p className="text-2xl font-extrabold text-gray-900">
-            ${fund.current_money.toLocaleString()} of ${fund.target_money.toLocaleString()} goal
+            {fund.current_money.toLocaleString()} VND of {fund.target_money.toLocaleString()} VND goal
           </p>
           <div className="w-full bg-gray-300 h-2 rounded mt-2">
             <div className="bg-green-500 h-2 rounded" style={{ width: `${fund.current_money / fund.target_money < 1 ? (fund.current_money / fund.target_money) * 100 : 100}%` }}></div>
