@@ -2,6 +2,7 @@ import "../app/globals.css";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { checkLogin } from "@/app/hooks/helper";
 
 interface User {
@@ -11,6 +12,7 @@ interface User {
 
 export function MyNavBar() {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -30,6 +32,22 @@ export function MyNavBar() {
 
     fetchUser();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include", // Ensures cookies are sent with request
+      });
+      if (!response.ok) throw new Error("Logout failed");
+
+      setUser(null);
+      router.push("/"); // Redirect to home after logout
+    } catch {
+      alert("Failed to log out. Please try again.");
+    }
+  };
+
   return (
     <div>
       <nav className="sticky top-0 bg-white shadow-lg py-3 pl-10 pr-10 w-full">
@@ -62,12 +80,20 @@ export function MyNavBar() {
           {/* Right Side */}
           <div className="flex items-center space-x-6">
             {user ? (
-              <Link
-                href="/profile"
-                className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg"
-              >
-                {user.firstname} {user.lastname}
-              </Link>
+              <>
+                <Link
+                  href="/profile"
+                  className="text-gray-700 hover:bg-green-700 hover:text-white px-3 py-1 rounded-lg"
+                >
+                  {user.firstname} {user.lastname}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-white bg-red-600 hover:bg-red-800 px-3 py-1 rounded-lg"
+                >
+                  Logout
+                </button>
+              </>
             ) : (
               <>
                 <Link

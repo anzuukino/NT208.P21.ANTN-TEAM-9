@@ -31,7 +31,7 @@ const DonatePage = () => {
   useEffect(() => {
     const fetchFunds = async () => {
       try {
-        const response = await fetch("/api/funds");
+        const response = await fetch("/api/funds/all");
         if (!response.ok) throw new Error("Failed to fetch funds");
 
         const data: Fund[] = await response.json();

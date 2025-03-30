@@ -2,7 +2,21 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const { signJWT } = require("./jwt_helpers");
 const bcrypt = require("bcrypt");
-const {getAllfund,getUserByIDpublic, getUserByIDprivate, getUserByEmail, createUser, healthcheck, donateFund, getBills, createFund,withdrawFund, createAttachment, getFund } = require("./db_helpers");
+const {
+    getAllfund,
+    getUserByIDpublic, 
+    getUserByIDprivate, 
+    getUserByEmail, 
+    createUser, 
+    healthcheck, 
+    donateFund, 
+    getBills, 
+    createFund,
+    withdrawFund, 
+    createAttachment, 
+    getFund,
+    getLimitedFunds 
+} = require("./db_helpers");
 const auth = require("./middleware/auth");
 const multer = require("multer");
 const path = require("path");
@@ -89,7 +103,7 @@ router.post("/api/register", async (req, res) => {
 
 router.post("/api/create-fund", auth, upload, async (req, res) => {
     try {
-        const requiredFields = ["title", "description", "goal", "deadline"];
+        const requiredFields = ["title", "category" ,"description", "goal", "deadline"];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -100,14 +114,29 @@ router.post("/api/create-fund", auth, upload, async (req, res) => {
             return res.status(400).json({ error: "Attachment is required." });
         }
 
-        let { title, description, goal, deadline } = req.body;
+        let { title, category, description, goal, deadline } = req.body;
         goal = parseFloat(goal);
         if (!Number.isFinite(goal) || goal <= 0) {
             return res.status(400).json({ error: "Goal must be a positive number." });
-          }
+        }
+
+        const deadlineDate = new Date(deadline);
+        const today = new Date();
+
+        today.setHours(0, 0, 0, 0);
+        deadlineDate.setHours(0, 0, 0, 0);
+
+        if (isNaN(deadlineDate.getTime())) {
+            return res.status(400).json({ error: "Invalid deadline date." });
+        }
+
+        if (deadlineDate <= today) {
+            return res.status(400).json({ error: "Deadline must be at least 1 day from today." });
+        }
+           
 
 
-        const newFund = await createFund(req.user.uid, title, description, goal, deadline);
+        const newFund = await createFund(req.user.uid, title,category, description, goal, deadline);
 
         if (!newFund) {
             return res.status(500).json({ error: "Fund creation failed" });
@@ -238,8 +267,13 @@ router.get("/api/user", auth, async (req, res) => {
     return res.json({uid: req.user.uid});
 })
 
-router.get("/api/funds", async (req, res) => {
+router.get("/api/funds/all", async (req, res) => {
     const funds = await getAllfund();
+    return res.json(funds);
+});
+
+router.get("/api/funds/limited", async (req, res) => {
+    const funds = await getLimitedFunds(9);
     return res.json(funds);
 });
 

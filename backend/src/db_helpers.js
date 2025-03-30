@@ -82,6 +82,7 @@ const Fund = sequelize.define("Fund", {
     title: DataTypes.TEXT,
     done: DataTypes.BOOLEAN,
     deadline: DataTypes.DATE,
+    description: DataTypes.TEXT,
 }, { tableName: "funds", timestamps: false });
 
 const FundAttachment = sequelize.define("FundAttachment", {
@@ -236,14 +237,15 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
     }
 }
 
-async function createFund(userid, title, description, goal, deadline) {
+async function createFund(userid, title, category, description, goal, deadline) {
     try {
         const fund = await Fund.create({
             uid: userid,
             target_money: goal,
             current_money: 0,
             created_at: new Date(),
-            categories: description,
+            categories: category,
+            description: description,
             title,
             done: false,
             deadline,
@@ -442,42 +444,75 @@ async function getFund(fundid) {
 }
 
 async function getBills(userid) {
-    return await Bill.findAll({
-        where: { uid: userid },
-        include: [
-            {
-                model: Donation,
-                attributes: ["fundID"]
-            },
-            {
-                model: Withdrawal,
-                attributes: ["fundID"]
-            }
-        ]
-    });
+    try {
+        return await Bill.findAll({
+            where: { uid: userid },
+            include: [
+                {
+                    model: Donation,
+                    attributes: ["fundID"]
+                },
+                {
+                    model: Withdrawal,
+                    attributes: ["fundID"]
+                }
+            ]
+        });
+    } catch (error) {
+        console.error("Error fetching bills:", error);
+        return null;
+    }
 }
 
 async function getUserByIDpublic(userid) {
-    const user = await User.findOne({
-        where: { uid: userid },
-        attributes: ["firstname", "lastname"],
-    });
-
-    return user;
+    try {
+        return await User.findOne({
+            where: { uid: userid },
+            attributes: ["firstname", "lastname"],
+        });
+    } catch (error) {
+        console.error("Error fetching public user data:", error);
+        return null;
+    }
 }
 
 async function getUserByIDprivate(userid) {
-    const user = await User.findOne({
-        where: { uid: userid },
-        attributes: { exclude: ["hash_password"] },
-    });
-
-    return user;
+    try {
+        return await User.findOne({
+            where: { uid: userid },
+            attributes: { exclude: ["hash_password"] },
+        });
+    } catch (error) {
+        console.error("Error fetching private user data:", error);
+        return null;
+    }
 }
 
-async function getAllfund(){
-    const fund = await Fund.findAll();
-    return fund;
+async function getAllfund() {
+    try {
+        return await Fund.findAll();
+    } catch (error) {
+        console.error("Error fetching all funds:", error);
+        return [];
+    }
+}
+
+async function getLimitedFunds(limit) {
+    try {
+        return await Fund.findAll({
+            limit: limit,
+            order: [["created_at", "DESC"]],
+            include: [
+                {
+                    model: FundAttachment,
+                    attributes: ["type", "path"]
+                }
+            ]
+        });
+    } catch (error) {
+        console.error("Error fetching limited funds:", error);
+        return [];
+    }
 }
 
 module.exports = {
@@ -493,5 +528,6 @@ module.exports = {
     getFund,
     getBills,
     createAttachment,
-    getAllfund
+    getAllfund,
+    getLimitedFunds
 };

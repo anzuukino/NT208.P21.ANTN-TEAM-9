@@ -28,7 +28,10 @@ const Card = ({
   return (
     <div className="max-w-xs w-[35vw] rounded-xl overflow-hidden shadow-lg bg-white border h-[44vh] relative">
       {/* Image */}
-      <div className={`h-[45%] bg-[url(${img})] bg-cover`}>
+      <div 
+        className="h-[45%] bg-cover bg-center"
+        style={{ backgroundImage: `url('${img}')` }}
+      >
       </div>
 
       {/* Content */}
@@ -39,7 +42,7 @@ const Card = ({
         </span>
 
         {/* Title */}
-        <h3 className="text-lg font-bold mt-2">{title}</h3>
+        <h3 className="text-lg font-bold mt-2 text-gray-900">{title}</h3>
 
         {/* Description */}
         <p className="text-sm text-gray-600 mt-1">

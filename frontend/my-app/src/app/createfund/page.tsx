@@ -6,16 +6,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import {useSubmitForm} from "@/app/hooks/buttonhelper";
 import {checkLogin} from "@/app/hooks/helper";
 
+const categories = [
+  "Campaigns",
+  "Business",
+  "Community",
+  "Charity",
+  "Personal fundraisers",
+  "Sports",
+  "Prize draws",
+  "Community shares"
+];
+
 const CreateFund = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stepParam = parseInt(searchParams.get("step") || "1", 10);
   const {submitForm, loading, error, success} = useSubmitForm();
+  
 
   const [step, setStep] = useState(1);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    category: "",
     goal: "",
     deadline: "",
     file: null as File | null,
@@ -28,16 +42,29 @@ const CreateFund = () => {
 
   useEffect(() => {
     const checkUserLogin = async () => {
-      const uid = await checkLogin();
-      if (!uid) {
-        router.push("/login");
+      try {
+        const uid = await checkLogin();
+        if (!uid) {
+          router.replace("/login"); // Ensure the redirect happens smoothly
+        } else {
+          setIsCheckingAuth(false);
+        }
+      } catch {
+        router.replace("/login");
       }
     };
 
     checkUserLogin();
   }, [router]);
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-700">Checking authentication...</p>
+      </div>
+    );
+  }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -69,6 +96,7 @@ const CreateFund = () => {
     e.preventDefault();
     const processedFormData: Record<string, string | File> = {
         title: formData.title,
+        category: formData.category,
         description: formData.description,
         goal: formData.goal,
         deadline: formData.deadline,
@@ -127,6 +155,21 @@ const CreateFund = () => {
                         value={formData.description}
                         ></textarea>
                     </div>
+                    <div>
+                        <label className="block text-gray-900 font-bold">Category</label>
+                        <select
+                            name="category"
+                            className="mt-1 w-full px-3 py-2 border border-gray-500 rounded-lg text-gray-900"
+                            onChange={handleChange}
+                            value={formData.category || ""}
+                        >
+                            <option value="">Select a category</option>
+                            {categories.map((category) => (
+                                <option key={category} value={category}>{category}</option>
+                            ))}
+                        </select>
+                    </div>
+
 
                     <button onClick={nextStep} className="w-full bg-blue-700 text-white py-2 rounded-lg font-bold">
                         Next
