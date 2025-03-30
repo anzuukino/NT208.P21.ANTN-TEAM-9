@@ -105,7 +105,7 @@ const RegistrationForm = () => {
   }, [router]);
   return (
     <div className="min-h-screen flex items-center justify-left bg-[url(../../assets/register-bg.jpg)] bg-cover font-[nunito]">
-      <div className="min-h-screen w-[50%] p-24 bg-[#FAF9F8] rounded-xl shadow-md">
+      <div className="min-h-screen w-[100%] bg-[#FAF9F8] rounded-xl shadow-md sm:w-[50%] sm:p-24">
         <div className="w-full max-w-xl bg-transparent p-12 mt-[-43px]">
           <AnimatePresence mode="wait">
             {step === 1 && (
