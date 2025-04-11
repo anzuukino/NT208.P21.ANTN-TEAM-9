@@ -12,9 +12,8 @@ const sequelize = new Sequelize(user_db.database, user_db.username, user_db.pass
 
 const User = sequelize.define("User", {
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         primaryKey: true,
-        autoIncrement: true,
         allowNull: false,
     },
     firstname: DataTypes.STRING,
@@ -35,7 +34,7 @@ const User = sequelize.define("User", {
 
 const Bill = sequelize.define("Bill", {
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     amount: DataTypes.DECIMAL,
@@ -58,7 +57,7 @@ const Bank = sequelize.define("Bank", {
         autoIncrement: true,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     bankname: DataTypes.STRING,
@@ -73,7 +72,7 @@ const Fund = sequelize.define("Fund", {
         primaryKey: true,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     target_money: DataTypes.DECIMAL,
@@ -83,6 +82,7 @@ const Fund = sequelize.define("Fund", {
     title: DataTypes.TEXT,
     done: DataTypes.BOOLEAN,
     deadline: DataTypes.DATE,
+    description: DataTypes.TEXT,
 }, { tableName: "funds", timestamps: false });
 
 const FundAttachment = sequelize.define("FundAttachment", {
@@ -105,7 +105,7 @@ const Donation = sequelize.define("Donation", {
         allowNull: false,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     billID: {
@@ -125,7 +125,7 @@ const Withdrawal = sequelize.define("Withdrawal", {
       allowNull: false,
     },
     uid: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
     },
     billID: {
@@ -170,7 +170,9 @@ Withdrawal.belongsTo(Fund, { foreignKey: "fundID" });
 async function createAdminUser() {
     try {
         const adminUser = await User.create({
-            fullname: "Admin",
+            uid: crypto.randomUUID(),
+            firstname: "Admin",
+            lastname: "User",
             email: "admin@example.com",
             created_at: new Date(),
             profile_pic: null,
@@ -215,6 +217,7 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
+            uid: crypto.randomUUID(),
             firstname,
             lastname,
             email,
@@ -234,14 +237,15 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
     }
 }
 
-async function createFund(userid, title, description, goal, deadline) {
+async function createFund(userid, title, category, description, goal, deadline) {
     try {
         const fund = await Fund.create({
             uid: userid,
             target_money: goal,
             current_money: 0,
             created_at: new Date(),
-            categories: description,
+            categories: category,
+            description: description,
             title,
             done: false,
             deadline,
@@ -251,6 +255,21 @@ async function createFund(userid, title, description, goal, deadline) {
         return fund;
     } catch (error) {
         console.error("Error creating fund:", error);
+        return false;
+    }
+}
+
+async function createAttachment(fundID, type, path) {
+    try {
+        const attachment = await FundAttachment.create(
+            fundID,
+            type,
+            path,
+        );
+
+        return attachment;
+    } catch (error) {
+        console.error("Error creating attachment:", error);
         return false;
     }
 }
@@ -294,7 +313,7 @@ async function donateFund(userid, fundid, amount) {
         );
 
         await Fund.update(
-            { current_money: fund.current_money + amount },
+            { current_money: Number(fund.current_money) + Number(amount) },
             { where: { fundID: fundid }, transaction }
         );
 
@@ -406,16 +425,99 @@ async function withdrawFund(userid, fundid, reason) {
 }
 
 async function getFund(fundid) {
-    return await Fund.findOne({ where: { fundID: fundid } });
+    try {
+        const fund = await Fund.findOne({
+            where: { fundID: fundid },
+            include: [
+                {
+                    model: FundAttachment,
+                    attributes: ["type", "path"]
+                }
+            ]
+        });
+
+        return fund;
+    } catch (error) {
+        console.error("Error fetching fund details:", error);
+        return null;
+    }
 }
 
 async function getBills(userid) {
-    return await Bill.findAll({
-        where: { uid: userid },
-    });
+    try {
+        return await Bill.findAll({
+            where: { uid: userid },
+            include: [
+                {
+                    model: Donation,
+                    attributes: ["fundID"]
+                },
+                {
+                    model: Withdrawal,
+                    attributes: ["fundID"]
+                }
+            ]
+        });
+    } catch (error) {
+        console.error("Error fetching bills:", error);
+        return null;
+    }
+}
+
+async function getUserByIDpublic(userid) {
+    try {
+        return await User.findOne({
+            where: { uid: userid },
+            attributes: ["firstname", "lastname"],
+        });
+    } catch (error) {
+        console.error("Error fetching public user data:", error);
+        return null;
+    }
+}
+
+async function getUserByIDprivate(userid) {
+    try {
+        return await User.findOne({
+            where: { uid: userid },
+            attributes: { exclude: ["hash_password"] },
+        });
+    } catch (error) {
+        console.error("Error fetching private user data:", error);
+        return null;
+    }
+}
+
+async function getAllfund() {
+    try {
+        return await Fund.findAll();
+    } catch (error) {
+        console.error("Error fetching all funds:", error);
+        return [];
+    }
+}
+
+async function getLimitedFunds(limit) {
+    try {
+        return await Fund.findAll({
+            limit: limit,
+            order: [["created_at", "DESC"]],
+            include: [
+                {
+                    model: FundAttachment,
+                    attributes: ["type", "path"]
+                }
+            ]
+        });
+    } catch (error) {
+        console.error("Error fetching limited funds:", error);
+        return [];
+    }
 }
 
 module.exports = {
+    getUserByIDprivate,
+    getUserByIDpublic,
     healthcheck,
     initDB,
     getUserByEmail,
@@ -424,5 +526,8 @@ module.exports = {
     donateFund,
     withdrawFund,
     getFund,
-    getBills
+    getBills,
+    createAttachment,
+    getAllfund,
+    getLimitedFunds
 };
