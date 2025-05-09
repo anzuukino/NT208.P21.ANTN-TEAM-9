@@ -18,5 +18,15 @@ module.exports = {
             Nunito: ["Nunito", ...fontFamiLy.sans]
         }
     },
+    screens: {
+      'sm': '576px',
+      'md': '960px',
+      'lg': '1440px',
+    },
   },
+  variants:{
+    extend:{ 
+      display: ['group-hover', 'responsive','hover'],
+    }
+  }
 };

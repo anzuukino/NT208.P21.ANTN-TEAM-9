@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { checkLogin } from "@/app/hooks/helper";
 import Footer from "@/components/Footer";
 import Card from "@/components/Card";
-import { MyNavBar } from "@/components/MyNavBar";
+import { MyNavBar } from "@/components/Header";
 import Link from "next/link";
 
 interface User {

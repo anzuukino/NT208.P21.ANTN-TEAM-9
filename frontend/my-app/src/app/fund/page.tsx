@@ -164,7 +164,7 @@ const FundPage = () => {
 const Wrapper = () => {
   return (
     <Suspense>
-      <FundPage />
+      <FundPage/>
     </Suspense>
   );
 };

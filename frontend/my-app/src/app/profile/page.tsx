@@ -76,7 +76,7 @@ const ProfilePage = () => {
             <p className="text-sm text-gray-600">Account Created At</p>
             <p className="font-medium">{profile.createdAt}</p>
           </div>
-          <div className="bg-green-100 p-3 rounded-md text-green-800 font-bold text-lg text-gray-900">
+          <div className="bg-green-100 p-3 rounded-md  font-bold text-lg text-gray-900">
             <p>Current Balance: {profile.balance}</p>
           </div>
           <button

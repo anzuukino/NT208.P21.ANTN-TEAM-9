@@ -12,7 +12,7 @@ const ImageUploader = () => {
     if (!files) return;
 
     const newImages: string[] = [];
-    const fileArray = Array.from(files).slice(0, 4); // Limit to first 4 files
+    const fileArray = Array.from(files).slice(0, 1); // Limit to first 4 files
 
     fileArray.forEach(file => {
       const reader = new FileReader();
@@ -24,7 +24,7 @@ const ImageUploader = () => {
           if (newImages.length === fileArray.length) {
             setSelectedImages(prev => {
               const combined = [...prev, ...newImages];
-              return combined.slice(0, 4); // Ensure max 4 images
+              return combined.slice(0, 1); // Ensure max 4 images
             });
           }
         }
@@ -60,7 +60,7 @@ const ImageUploader = () => {
               <span className="font-semibold">Click to upload</span> or drag and drop
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PNG, JPG, GIF (Max 4 images)
+              Upload an image in PNG, JPG, GIF 
             </p>
           </div>
           <input 
@@ -76,10 +76,10 @@ const ImageUploader = () => {
       </div>
       
       {/* Preview area */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex justify-center">
         {selectedImages.length > 0 ? (
           selectedImages.map((src, index) => (
-            <div key={index} className="relative h-40 rounded-lg overflow-hidden border border-gray-200">
+            <div key={index} className="relative w-full h-[30vh] rounded-lg overflow-hidden border border-gray-200">
               <Image 
                 src={src} 
                 alt={`Selected image ${index + 1}`} 
@@ -101,14 +101,6 @@ const ImageUploader = () => {
         )}
         
         {/* Empty slots */}
-        {Array.from({ length: Math.max(0, 4 - selectedImages.length) }).map((_, index) => (
-          <div 
-            key={`empty-${index}`} 
-            className="h-40 rounded-lg border border-dashed border-gray-300 flex items-center justify-center bg-gray-50"
-          >
-            <span className="text-gray-400">Image slot {selectedImages.length + index + 1}</span>
-          </div>
-        ))}
       </div>
     </div>
   );

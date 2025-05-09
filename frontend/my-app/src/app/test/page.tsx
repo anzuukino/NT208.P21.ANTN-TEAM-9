@@ -14,7 +14,7 @@ import { Inter, Nunito } from "next/font/google";
 import { motion, AnimatePresence } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import Footer from "@/components/Footer";
-import { MyNavBar } from "@/components/MyNavBar";
+import { MyNavBar } from "@/components/Header";
 import { div } from "framer-motion/client";
 
 const categories = [
@@ -370,7 +370,7 @@ function PostWriter() {
                 exit={{ opacity: 0, x: -50 }}
               >
                 {/* Step 2 here */}
-                <div className="h-80vh w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
+                <div className="h-80vh w-full sm:w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
                   <div className="m-8">
                     <form className="max-w-sm mx-auto">
                       <label
