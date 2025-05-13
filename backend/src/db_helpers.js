@@ -30,6 +30,7 @@ const User = sequelize.define("User", {
     identify_no: DataTypes.STRING,
     cash: DataTypes.DECIMAL,
     postal_code: DataTypes.STRING,
+    is_oauth: DataTypes.BOOLEAN,
 }, { tableName: "users", timestamps: false });
 
 const Bill = sequelize.define("Bill", {
@@ -179,7 +180,8 @@ async function createAdminUser() {
             hash_password: "$2a$10$FTOi2lllxzOh4Ej44rNbhedSQH6m.WnwPIEaGKJbkISIv3W34W1Ne", // Hash this in a real app
             phone_no: "1234567890",
             identify_no: "ADMIN123",
-            cash: 10000000
+            cash: 10000000,
+            is_oauth: false,
         });
 
         console.log("Admin user created:", adminUser);
@@ -212,7 +214,7 @@ async function getUserByEmail(email) {
     return await User.findOne({ where: { email } });
 }
 
-async function createUser(firstname, lastname, email, password, phone_no, identify_no, postal_code, profile_pic = null) {
+async function createUser(firstname, lastname, email, password, phone_no, identify_no, postal_code, profile_pic = null, is_oauth = false) {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -227,7 +229,8 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
             profile_pic,
             created_at: new Date(),
             cash: 0,
-            postal_code
+            postal_code,
+            is_oauth
         });
 
         return user;

@@ -37,6 +37,13 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap"
           rel="stylesheet"
         />
+        {/* Google OAuth */}
+        <script
+          src="https://accounts.google.com/gsi/client"
+          async
+          defer
+        ></script>
+
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

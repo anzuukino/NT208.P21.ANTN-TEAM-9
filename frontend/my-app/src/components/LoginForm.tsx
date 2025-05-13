@@ -1,7 +1,7 @@
 "use client";
 import { Inter } from "next/font/google";
 import { useEffect, useState } from "react";
-import { useButtonClickAlert, useLogin } from "@/app/hooks/buttonhelper";
+import { useButtonClick, useLogin } from "@/app/hooks/buttonhelper";
 import { useRouter } from "next/navigation";
 import { checkLogin } from "@/app/hooks/helper";
 
@@ -25,7 +25,7 @@ export default function LoginForm() {
     password: "",
   });
 
-  const handleClick = useButtonClickAlert();
+  const { OauthClickGoogle, loading: loadingGoogle } = useButtonClick();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -73,6 +73,7 @@ export default function LoginForm() {
 
     return "weak";
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[url(../../assets/money.jpg)] bg-cover font-[inter]">
@@ -184,29 +185,32 @@ export default function LoginForm() {
         <div className="space-y-3">
           <button
             className="flex items-center justify-center w-full py-3 border border-gray-400 rounded-lg hover:bg-gray-200 text-lg font-semibold text-gray-900"
-            onClick={handleClick}
+            onClick={OauthClickGoogle}
+            disabled={loadingGoogle}
           >
+
             <img
               src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
               alt="Google"
               className="w-6 h-6 mr-3"
             />
-            Continue with Google
+            {loadingGoogle ? "Loading..." : "Continue with Google"}
           </button>
           <button
             className="flex items-center justify-center w-full py-3 border border-gray-400 rounded-lg hover:bg-gray-200 text-lg font-semibold text-gray-900"
-            onClick={handleClick}
+            onClick={OauthClickGoogle}
+            disabled={loadingGoogle}
           >
             <img
               src="https://cdn-icons-png.flaticon.com/512/124/124010.png"
               alt="Facebook"
               className="w-6 h-6 mr-3"
             />
-            Continue with Facebook
+            {loading ? "Loading..." : "Continue with Google"}
           </button>
           <button
             className="flex items-center justify-center w-full py-3 border border-gray-400 rounded-lg hover:bg-gray-200 text-lg font-semibold text-gray-900"
-            onClick={handleClick}
+            onClick={OauthClickGoogle}
           >
             <img
               src="https://cdn-icons-png.flaticon.com/512/731/731985.png"
@@ -218,5 +222,6 @@ export default function LoginForm() {
         </div>
       </div>
     </div>
+    
   );
 }

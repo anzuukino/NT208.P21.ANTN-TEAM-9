@@ -83,6 +83,7 @@ Ensure you have the following installed:
 3. Access the application:
    - `http://localhost:3000`
    - Database: PostgreSQL running inside a container
+   - Admin credentials: `admin@example.com` / `testpassword`
 
 ## API Endpoints (Backend)
 - `POST /api/auth/login` - User login

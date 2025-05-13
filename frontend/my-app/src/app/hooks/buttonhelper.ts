@@ -1,4 +1,13 @@
 import { useCallback, useState } from "react";
+import { useRouter } from "next/router";
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+//const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "180175983654-eb9bg6s9hm9ef3ieisij8f31t0hi5f0l.apps.googleusercontent.com";
 
 
 const useRegister = () => {
@@ -78,10 +87,38 @@ const useLogin = () => {
   return { login, loading, error, success };
 }
 
-const useButtonClickAlert = (message: string = "This feature is not implemented yet.") => {
-  return useCallback(() => {
-    alert(message);
-  }, [message]);
+const useButtonClick = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const OauthClickGoogle = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await fetch("/api/oauth", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        window.location.href = data.url; // redirect to Google Auth
+        setSuccess(true);
+      } else {
+        setError(data.error || "Failed to get Google login URL");
+      }
+    } catch (err) {
+      setError("Something went wrong");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { OauthClickGoogle, loading, error, success };
 };
 
 
@@ -142,4 +179,4 @@ const useSubmitForm = () => {
   return { submitForm, loading, error, success };
 }
 
-export { useRegister, useLogin, useButtonClickAlert, useSubmitForm };
+export { useRegister, useLogin, useButtonClick, useSubmitForm };

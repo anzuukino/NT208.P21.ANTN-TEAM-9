@@ -17,12 +17,6 @@ services:
       #   - '8888:8888'
       depends_on:
         - database
-      environment:
-        - PORT=8888
-        - POSTGRES_USER=postgresql
-        - POSTGRES_HOST=database
-        - POSTGRES_PASSWORD=095f75fe10f6541b51d4a1ca84a993ac274ac14bee50a6c7a7df6c79cffd1946
-        - POSTGRES_DB=app
       restart: unless-stopped
   frontend:
       build: ./frontend
@@ -30,6 +24,8 @@ services:
       #   - '3000:80'
       depends_on:
         - backend
+      environment:
+        - GOOGLE_CLIENT_ID=180175983654-eb9bg6s9hm9ef3ieisij8f31t0hi5f0l.apps.googleusercontent.com
       restart: unless-stopped
   nginx:
       build: ./nginx

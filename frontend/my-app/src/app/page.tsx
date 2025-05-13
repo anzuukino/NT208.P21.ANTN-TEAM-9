@@ -49,6 +49,24 @@ export default function Home() {
         }
       };
 
+      const checkUser = async () => {
+        try {
+          const { uid } = await checkLogin();
+          if (!uid) return;
+
+          const response = await fetch(`/api/check-information`);
+          if (response.ok) return;
+          const resData = await response.json();
+          if (resData.error) {
+            setError(resData.error);
+          }
+
+        } catch(error) {
+          setError("");
+          console.error("Error checking user login:", error);
+        }
+      };
+
     const fetchFunds = async () => {
       try {
         const response = await fetch("/api/funds/limited");
@@ -77,7 +95,7 @@ export default function Home() {
         setError("Unable to load funding data. Please try again later.");
       }
     };
-
+    checkUser();
     fetchUser();
     fetchFunds();
   }, []);

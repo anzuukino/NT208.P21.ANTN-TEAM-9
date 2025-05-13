@@ -18,6 +18,8 @@ const {
     getLimitedFunds 
 } = require("./db_helpers");
 const auth = require("./middleware/auth");
+const { GoogleClientID, GoogleClientSecret } = require("./config");
+const { OAuth2Client } = require("google-auth-library");
 const multer = require("multer");
 const path = require("path");
 const crypto = require("crypto");
@@ -59,6 +61,79 @@ router.get('/api/healthcheck', async (req, res) => {
     }
 });
 
+router.get("/api/auth/google", async (req, res) => {
+    const code = req.query.code;
+    try {
+        const redirectURL = "http://localhost:3000/api/auth/google"
+        const client = new OAuth2Client(
+            GoogleClientID,
+            GoogleClientSecret,
+            redirectURL
+        );
+        const { tokens } = await client.getToken(code);
+        const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: {
+                Authorization: `Bearer ${tokens.access_token}`,
+            },
+        });
+
+        const profile = await userInfoResponse.json();
+
+        if (!profile.email) {
+            return res.status(400).json({ error: "No email found in profile" });
+        }
+
+        const email = profile.email;
+        const firstname = profile.given_name || "";
+        const lastname = profile.family_name || "";
+        const postalcode = "";
+        const phone_no = "";
+        const identify_no = "";
+
+        let user = await getUserByEmail(email);
+        if (!user) {
+            user = await createUser(
+                firstname, lastname, email, "", phone_no, identify_no, postalcode, null, true);
+            if (!user) {
+                return res.status(500).json({ error: "User registration failed" });
+            }
+        }
+    
+
+        const jwtToken = signJWT({ uid: user.uid, email: user.email });
+        res.cookie("token", jwtToken, { httpOnly: true });
+        res.redirect("/");
+    } catch (error) {
+        console.error("Error during Google authentication:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+});
+
+router.post("/api/oauth", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Referrer-Policy", "no-referrer-when-downgrade");
+
+    const redirectURL = "http://localhost:3000/api/auth/google"
+
+    const client = new OAuth2Client(
+        GoogleClientID,
+        GoogleClientSecret,
+        redirectURL
+    );
+
+    const authorizeUrl = client.generateAuthUrl({
+        access_type: "online",
+        scope: [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+        ],
+        prompt: "consent",
+    });
+
+    return res.json({ url: authorizeUrl });
+    
+});
 
 router.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
@@ -275,6 +350,24 @@ router.get("/api/funds/all", async (req, res) => {
 router.get("/api/funds/limited", async (req, res) => {
     const funds = await getLimitedFunds(9);
     return res.json(funds);
+});
+
+router.get("/api/check-information", auth, async (req, res) => {
+    const user = await getUserByIDprivate(req.user.uid);
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.is_oauth){
+        return res.status(200).json({ message: "User information is complete" });
+    }
+
+    const requiredFields = ["postalcode", "phone_no", "identify_no"];
+    const missingFields = requiredFields.filter(field => !user[field] || user[field].trim() === "");
+    if (missingFields.length > 0) {
+        return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}. Please complete your profile at /profile.` });
+    }
+    return res.status(200).json({ message: "User information is complete" });
 });
 
 module.exports = router;
