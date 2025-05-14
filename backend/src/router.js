@@ -15,7 +15,9 @@ const {
     withdrawFund, 
     createAttachment, 
     getFund,
-    getLimitedFunds 
+    getLimitedFunds,
+    UpdateUser,
+    createProfileImage 
 } = require("./db_helpers");
 const auth = require("./middleware/auth");
 const { GoogleClientID, GoogleClientSecret } = require("./config");
@@ -369,5 +371,56 @@ router.get("/api/check-information", auth, async (req, res) => {
     }
     return res.status(200).json({ message: "User information is complete" });
 });
+
+router.post("/api/edit-profile", auth, async (req, res) => {
+    const { postal_code, phone_no, identify_no } = req.body;
+
+    try {
+        const user = await getUserByIDprivate(req.user.uid);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const updateFields = {};
+        if (postal_code !== undefined) updateFields.postal_code = postal_code;
+        if (phone_no !== undefined) updateFields.phone_no = phone_no;
+        if (identify_no !== undefined) updateFields.identify_no = identify_no;
+
+        if (Object.keys(updateFields).length > 0) {
+            await user.update(updateFields);
+        }
+
+        return res.status(200).json({ message: "Profile updated successfully", user });
+
+    } catch (err) {
+        console.error("Error updating profile:", err);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.post("/api/upload-profile-image", auth, upload, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No image file provided" });
+        }
+
+        const profileImage = await createProfileImage(
+            req.user.uid,
+            path.extname(req.file.originalname).toLowerCase(),
+            req.file.path
+        );
+
+        if (!profileImage) {
+            return res.status(500).json({ error: "Failed to save profile image" });
+        }
+
+        return res.status(200).json({ message: "Profile image uploaded successfully", profileImage });
+
+    } catch (err) {
+        console.error("Error uploading profile image:", err);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 
 module.exports = router;

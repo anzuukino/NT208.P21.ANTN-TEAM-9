@@ -2,6 +2,7 @@ const { Sequelize, DataTypes } = require("sequelize");
 const { user_db } = require("./config");
 const bcrypt = require("bcrypt");
 const crypto = require('crypto');
+const path = require("path");
 
 const sequelize = new Sequelize(user_db.database, user_db.username, user_db.password, {
     host: user_db.host,
@@ -24,7 +25,6 @@ const User = sequelize.define("User", {
         allowNull: false,
         unique: true,
     },
-    profile_pic: DataTypes.TEXT,
     hash_password: DataTypes.STRING,
     phone_no: DataTypes.STRING,
     identify_no: DataTypes.STRING,
@@ -95,6 +95,15 @@ const FundAttachment = sequelize.define("FundAttachment", {
     path: DataTypes.STRING,
 }, { tableName: "fund_attachment", timestamps: false });
 
+const ProfileImage = sequelize.define("ProfileImage", {
+    uid: {
+        type: DataTypes.UUID,
+        allowNull: false,
+    },
+    type: DataTypes.STRING,
+    path: DataTypes.STRING,
+}, { tableName: "profile_image", timestamps: false });
+
 const Donation = sequelize.define("Donation", {
     dID: {
         type: DataTypes.INTEGER,
@@ -145,6 +154,9 @@ Bill.belongsTo(User, { foreignKey: "uid" });
 
 User.hasMany(Fund, { foreignKey: "uid" });
 Fund.belongsTo(User, { foreignKey: "uid" });
+
+User.hasOne(ProfileImage, { foreignKey: "uid" });
+ProfileImage.belongsTo(User, { foreignKey: "uid" });
 
 Fund.hasMany(FundAttachment, { foreignKey: "fundID" });
 FundAttachment.belongsTo(Fund, { foreignKey: "fundID" });
@@ -484,6 +496,12 @@ async function getUserByIDprivate(userid) {
         return await User.findOne({
             where: { uid: userid },
             attributes: { exclude: ["hash_password"] },
+            include: [
+                {
+                    model: ProfileImage,
+                    attributes: ["type", "path"]
+                }
+            ]
         });
     } catch (error) {
         console.error("Error fetching private user data:", error);
@@ -518,6 +536,45 @@ async function getLimitedFunds(limit) {
     }
 }
 
+async function UpdateUser(userid, firstname, lastname,  phone_no, identify_no, postal_code, profile_pic) {
+    try {
+        const user = await User.findOne({ where: { uid: userid } });
+        if (!user) {
+            console.log("User not found");
+            return false;
+        }
+
+        await User.update(
+            { firstname, lastname, phone_no, identify_no, postal_code, profile_pic },
+            { where: { uid: userid } }
+        );
+
+        return true;
+    } catch (error) {
+        console.error("Error updating user:", error);
+        return false;
+    }
+}
+
+async function createProfileImage(userid, type, filepath) {
+    try {
+        await ProfileImage.destroy({ where: { uid: userid } });
+
+        const image = await ProfileImage.create({
+            uid: userid,
+            type,
+            path: filepath,
+        }, {
+            attributes: { exclude: ['id'] }
+        });
+
+        return image;
+    } catch (error) {
+        console.error("Error creating profile image:", error);
+        return false;
+    }
+}
+
 module.exports = {
     getUserByIDprivate,
     getUserByIDpublic,
@@ -532,5 +589,7 @@ module.exports = {
     getBills,
     createAttachment,
     getAllfund,
-    getLimitedFunds
+    getLimitedFunds,
+    UpdateUser,
+    createProfileImage
 };

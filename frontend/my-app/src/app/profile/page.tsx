@@ -4,17 +4,23 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Router } from "next/router";
 import { checkLogin } from "@/app/hooks/helper";
+import ProfileImageUploader  from "@/components/ImageProfileUploadForm";
 
 const ProfilePage = () => {
   const [profile, setProfile] = useState({
     fullName: "",
     email: "",
     phone: "",
+    identify_no: "",
+    postalCode: "",
     createdAt: "",
     balance: "",
+    profile_pic: "",
   });
   const router = useRouter();
-
+  const [originalProfile, setOriginalProfile] = useState(profile);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isModified, setIsModified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -26,13 +32,18 @@ const ProfilePage = () => {
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const data = await response.json();
-        setProfile({
+        const loadedProfile = {
           fullName: `${data.firstname} ${data.lastname}`,
           email: data.email,
           phone: data.phone_no || "N/A",
+          identify_no: data.identify_no || "N/A",
+          postalCode: data.postalcode || "N/A",
           createdAt: new Date(data.created_at).toLocaleDateString("en-GB"),
           balance: `${parseFloat(data.cash).toFixed(2)}VND`,
-        });
+          profile_pic: data.ProfileImage?.path || "",
+        }
+        setProfile(loadedProfile);
+        setOriginalProfile(loadedProfile);
       } catch (e: any) {
         setError(e.message);
         router.push("/");
@@ -43,6 +54,43 @@ const ProfilePage = () => {
 
     fetchUserProfile();
   }, []);
+
+  const handleInputChange = (field: keyof typeof profile, value: string) => {
+    setProfile((prev) => {
+      const updated = { ...prev, [field]: value };
+      setIsModified(JSON.stringify(updated) !== JSON.stringify(originalProfile));
+      return updated;
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch("/api/edit-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone_no: profile.phone,
+          identify_no: profile.identify_no,
+          postal_code: profile.postalCode,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+
+      const updated = await res.json();
+      const updatedProfile = {
+        ...profile,
+        phone: updated.user.phone_no || "N/A",
+        identify_no: updated.user.identify_no || "N/A",
+        postalCode: updated.user.postalcode || "N/A",
+      };
+      setProfile(updatedProfile);
+      setOriginalProfile(updatedProfile);
+      setIsModified(false);
+    } catch (err: any) {
+      alert("Error saving changes: " + err.message);
+    }
+  };
+
   const handleShowHistory = () => {
     router.push("/bills");
   };
@@ -51,38 +99,56 @@ const ProfilePage = () => {
   if (loading) return <p className="text-center">Loading...</p>;
   return (
     <div className="min-h-screen bg-beige-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl p-6 border border-green-300 gap-6 flex flex-col justify-between">
+      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl p-6 border border-green-300 gap-6 flex flex-col">
         <h2 className="text-2xl font-bold text-green-800 mb-6">Your Profile</h2>
 
-        {/* Profile Picture */}
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-green-200 text-green-800 flex items-center justify-center text-3xl font-bold rounded-full">
-            {profile.fullName.charAt(0)}
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Upload your profile picture</p>
-            <button className="mt-2 px-4 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700">
-              Upload Image
-            </button>
-          </div>
+        {/* Profile Picture Section */}
+          <div className="flex items-center gap-4">
+            {profile.profile_pic ? (
+            <img 
+              src={`/${profile.profile_pic}`} 
+              alt="Profile" 
+              className="w-20 h-20 object-cover rounded-full"
+            />
+          ) : (
+            <div className="w-20 h-20 bg-green-200 text-green-800 flex items-center justify-center text-3xl font-bold rounded-full">
+              {profile.fullName.charAt(0)}
+            </div>
+          )}
+          <ProfileImageUploader 
+          onUploadSuccess={(profileImage) => {
+            setProfile(prev => ({...prev, profile_pic: profileImage.path}));
+          }} 
+        />
         </div>
 
-        {/* User Details */}
+        {/* Profile Details */}
         <div className="mt-6 space-y-4 flex flex-col gap-2 text-gray-900">
-          <DetailItem label="Full Name" value={profile.fullName} />
-          <DetailItem label="Email" value={profile.email} />
-          <DetailItem label="Phone Number" value={profile.phone} />
-          <div className="bg-gray-100 p-3 rounded-md">
-            <p className="text-sm text-gray-600">Account Created At</p>
-            <p className="font-medium">{profile.createdAt}</p>
-          </div>
-          <div className="bg-green-100 p-3 rounded-md  font-bold text-lg text-gray-900">
+          {/* Full Name is read-only */}
+          <ReadOnlyField label="Full Name" value={profile.fullName} />
+          {/* Editable fields */}
+          <EditableField label="Phone Number" value={profile.phone} onChange={(val) => handleInputChange("phone", val)} />
+          <EditableField label="Identity Number" value={profile.identify_no} onChange={(val) => handleInputChange("identify_no", val)} />
+          <EditableField label="Postal Code" value={profile.postalCode} onChange={(val) => handleInputChange("postalCode", val)} />
+
+          {/* Read-only fields */}
+          <ReadOnlyField label="Email" value={profile.email} />
+          <ReadOnlyField label="Account Created At" value={profile.createdAt} />
+          <div className="bg-green-100 p-3 rounded-md font-bold text-lg text-gray-900">
             <p>Current Balance: {profile.balance}</p>
           </div>
+
+          {/* Show Save Changes button only if something has changed */}
+          {isModified && (
+            <button onClick={handleSave} className="w-fit bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-md mt-2">
+              Save Changes
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleShowHistory}
-            className="max-w-64 mt-4 text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+            className="max-w-64 mt-4 text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
           >
             Show history transactions
           </button>
@@ -92,16 +158,30 @@ const ProfilePage = () => {
   );
 };
 
-// Reusable component for user details
-const DetailItem = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between items-center bg-gray-100 p-3 rounded-md">
-    <div>
-      <p className="text-sm text-gray-600">{label}</p>
-      <p className="font-medium">{value}</p>
-    </div>
-    <button className="px-4 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600">
-      Edit
-    </button>
+const EditableField = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}) => (
+  <div className="bg-gray-100 p-3 rounded-md">
+    <label className="block text-sm text-gray-600">{label}</label>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-white border border-gray-300 rounded-md p-2 mt-1 text-gray-900"
+    />
+  </div>
+);
+
+const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
+  <div className="bg-gray-100 p-3 rounded-md">
+    <p className="text-sm text-gray-600">{label}</p>
+    <p className="font-medium">{value}</p>
   </div>
 );
 
