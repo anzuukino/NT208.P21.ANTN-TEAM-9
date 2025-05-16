@@ -2,3 +2,6 @@ backend/src/node_modules
 frontend/my-app/node_modules
 frontend/my-app/.next
 hardhat/node_modules
+
+# API and private key: 
+hardhat/.env

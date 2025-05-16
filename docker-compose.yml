@@ -36,3 +36,6 @@ services:
         - backend
         - database
       restart: unless-stopped
+  hardhat:
+      build: ./hardhat
+
