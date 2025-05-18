@@ -137,17 +137,13 @@ function PostWriter() {
   };
 
   const handleChange = (
-    e:
-      | React.ChangeEvent<
-          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
-      | { target: { name: string; value: string } }
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    console.log("From handleChange: " + JSON.stringify(formData, null, 2));
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFileChange = (files: File[]) => {
@@ -176,33 +172,60 @@ function PostWriter() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const processedFormData: Record<string, string | File> = {
-      title: formData.title,
-      category: formData.category,
-      description: formData.description,
-      goal: formData.goal,
-      deadline: formData.deadline,
-    };
-    // console.log("HEHE: handleSubmit");
-    console.log(
-      "From handleSubmit: " + JSON.stringify(processedFormData, null, 2)
+    
+    // Validate required fields
+    const requiredFields = ["title", "description", "category", "deadline"];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof FormData]);
+    
+    if (missingFields.length > 0) {
+      alert(`Missing required fields: ${missingFields.join(", ")}`);
+      return;
+    }
+
+    if (!formData.files || formData.files.length === 0) {
+      alert("Please upload at least one image");
+      return;
+    }
+
+    if (selectedDates.length === 0) {
+      alert("Please add at least one donation plan entry");
+      return;
+    }
+
+    // Create FormData object for the submission
+    const formDataToSend = new FormData();
+    
+    // Append all text fields
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('category', formData.category);
+    formDataToSend.append('goal', totalAmount.toString());
+    formDataToSend.append('deadline', formData.deadline);
+    formDataToSend.append('donationPlan', JSON.stringify(selectedDates));
+    
+    // Append all files
+    formData.files?.forEach((file) => {
+      formDataToSend.append('files', file);
+    });
+
+    try {
+      const fundID = await submitForm(formDataToSend);
+      if (fundID) {
+        router.push(`/fund?fund=${fundID}`);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Failed to submit form. Please try again.");
+    }
+  };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-700">Checking authentication...</p>
+      </div>
     );
-
-    if (formData.file instanceof File) {
-      processedFormData.file = formData.file;
-    }
-    const fundID = await submitForm(processedFormData);
-    if (fundID) {
-      router.push(`/fund?fund=${fundID}`);
-    }
-  };
-
-  // Animation variants
-  const variants = {
-    initial: { opacity: 0, x: 50 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 },
-  };
+  }
 
   return (
     <div>
@@ -391,10 +414,12 @@ function PostWriter() {
                         Select category
                       </label>
                       <select
-                        id="countries"
-                        className="text-l bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        id="category"
+                        name="category"
+                        value={formData.category}
                         onChange={handleChange}
-                        value={formData.category || ""}
+                        className="text-l bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        required
                       >
                         <option value="" disabled>
                           Select a category
@@ -407,13 +432,43 @@ function PostWriter() {
                       </select>
                     </form>
                   </div>
-                  <ImageUploader></ImageUploader>
-                  <div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Upload Cover Image
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFileChange(Array.from(e.target.files))
+                        }
+                      }}
+                      accept="image/*"
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  
+                  {loading && (
+                    <div className="text-center my-4">
+                      <p>Submitting your campaign...</p>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="text-red-500 text-center my-4">
+                      <p>{error}</p>
+                    </div>
+                  )}
+
+                  <div className="mt-auto">
                     <button
                       onClick={handleSubmit}
-                      className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 mb-6"
+                      disabled={!formData.category || !formData.files || loading}
+                      className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 w-full"
                     >
-                      Confirm and create
+                      {loading ? "Processing..." : "Confirm and create"}
                     </button>
                   </div>
                   {error && <p className="text-red-500 text-center">{error}</p>}
