@@ -86,6 +86,26 @@ const Fund = sequelize.define("Fund", {
     description: DataTypes.TEXT,
 }, { tableName: "funds", timestamps: false });
 
+const DonationPlan = sequelize.define("DonationPlan", {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+    },
+    fundID: {
+        type: DataTypes.UUID,
+        allowNull: false,
+    },
+    date: {
+        type: DataTypes.DATE,
+        allowNull: false,
+    },
+    amount: {
+        type: DataTypes.DECIMAL,
+        allowNull: false,
+    },
+}, { tableName: "donation_plans", timestamps: false });
+
 const FundAttachment = sequelize.define("FundAttachment", {
     fundID: {
         type: DataTypes.UUID,
@@ -160,6 +180,9 @@ ProfileImage.belongsTo(User, { foreignKey: "uid" });
 
 Fund.hasMany(FundAttachment, { foreignKey: "fundID" });
 FundAttachment.belongsTo(Fund, { foreignKey: "fundID" });
+
+Fund.hasMany(DonationPlan, { foreignKey: "fundID" });
+DonationPlan.belongsTo(Fund, { foreignKey: "fundID" });
 
 Fund.hasMany(Donation, { foreignKey: "fundID" });
 Donation.belongsTo(Fund, { foreignKey: "fundID" });
@@ -252,7 +275,7 @@ async function createUser(firstname, lastname, email, password, phone_no, identi
     }
 }
 
-async function createFund(userid, title, category, description, goal, deadline) {
+async function createFund(userid, title, category, description, goal, deadline, donationPlan) {
     try {
         const fund = await Fund.create({
             uid: userid,
@@ -575,6 +598,22 @@ async function createProfileImage(userid, type, filepath) {
     }
 }
 
+async function saveDonationPlan(fundID, donationPlan) {
+    try {
+        const planItems = donationPlan.map(item => ({
+            fundID,
+            date: new Date(item.date),
+            amount: item.amount,
+        }));
+
+        await DonationPlan.bulkCreate(planItems);
+        return true;
+    } catch (error) {
+        console.error("Error saving donation plan:", error);
+        return false;
+    }
+}
+
 module.exports = {
     getUserByIDprivate,
     getUserByIDpublic,
@@ -591,5 +630,6 @@ module.exports = {
     getAllfund,
     getLimitedFunds,
     UpdateUser,
-    createProfileImage
+    createProfileImage,
+    saveDonationPlan
 };

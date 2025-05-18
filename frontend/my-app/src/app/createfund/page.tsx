@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useCallback } from "react";
 import { useEffect } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import { ClassicEditor, Essentials, Paragraph, Bold, Italic } from "ckeditor5";
@@ -15,7 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import Footer from "@/components/Footer";
 import { MyNavBar } from "@/components/Header";
-import { div } from "framer-motion/client";
 
 const categories = [
   "Campaigns",
@@ -39,68 +38,48 @@ const nunito = Nunito({
   variable: "--font-nunito",
 });
 
+interface DonationDate {
+  date: string;
+  amount: number;
+}
+
+interface FormData {
+  title: string;
+  description: string;
+  category: string;
+  goal: string;
+  deadline: string;
+  files?: File[];
+  previewUrls: string[];
+  donationPlan: DonationDate[];
+}
+
 function PostWriter() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const [title, setTitle] = useState<string>("");
-  const [content, setContent] = useState<string>("");
   const stepParam = parseInt(searchParams.get("step") || "0", 10);
-  const [isVisible, setShowHide] = useState(false);
-  const [completedSteps, setCompletedSteps] = useState<boolean[]>([
-    false,
-    false,
-    false,
-  ]);
+  const [completedSteps, setCompletedSteps] = useState<boolean[]>([false, false, false]);
   const [step, setStep] = useState(0);
   const { submitForm, loading, error, success } = useSubmitForm();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  let router = useRouter();
-
-  interface DonationDate {
-    date: string;
-    amount: number;
-  }
 
   const [selectedDates, setSelectedDates] = useState<DonationDate[]>([]);
   const [currentDate, setCurrentDate] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
 
-  const handleAddDate = () => {
-    if (currentDate && amount) {
-      setSelectedDates([
-        ...selectedDates,
-        { date: currentDate, amount: parseFloat(amount) },
-      ]);
-      setCurrentDate("");
-      setAmount("");
-    }
-  };
-
-  const handleRemoveDate = (index: number) => {
-    const newDates = [...selectedDates];
-    newDates.splice(index, 1);
-    setSelectedDates(newDates);
-  };
-
-  const totalAmount = selectedDates.reduce((sum, item) => sum + item.amount, 0);
-
-  const [formData, setFormData] = useState<{
-    title: "";
-    description: "";
-    category: "";
-    goal: "";
-    deadline: "";
-    file?: File;
-    previewUrl: string[];
-  }>({
+  const [formData, setFormData] = useState<FormData>({
     title: "",
     description: "",
     category: "",
     goal: "",
     deadline: "",
-    file: undefined,
-    previewUrl: [],
+    files: undefined,
+    previewUrls: [],
+    donationPlan: [],
   });
+
+  const totalAmount = selectedDates.reduce((sum, item) => sum + item.amount, 0);
 
   useEffect(() => {
     for (let i = 0; i < stepParam; i++) {
@@ -110,14 +89,14 @@ function PostWriter() {
       }
     }
     setStep(stepParam);
-  }, [stepParam, completedSteps]);
+  }, [stepParam, completedSteps, router]);
 
   useEffect(() => {
     const checkUserLogin = async () => {
       try {
         const uid = await checkLogin();
         if (!uid) {
-          router.replace("/login"); // Ensure the redirect happens smoothly
+          router.replace("/login");
         } else {
           setIsCheckingAuth(false);
         }
@@ -128,50 +107,61 @@ function PostWriter() {
 
     checkUserLogin();
   }, [router]);
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-700">Checking authentication...</p>
-      </div>
-    );
-  }
 
-  const handleChange = (
-    e:
-      | React.ChangeEvent<
-          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
-      | { target: { name: string; value: string } }
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    console.log(formData.description);
+  const handleAddDate = () => {
+    if (currentDate && amount) {
+      const newDates = [
+        ...selectedDates,
+        { date: currentDate, amount: parseFloat(amount) },
+      ];
+      setSelectedDates(newDates);
+      setFormData(prev => ({
+        ...prev,
+        donationPlan: newDates,
+        goal: totalAmount.toString()
+      }));
+      setCurrentDate("");
+      setAmount("");
+    }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = e.target.files;
-      let previewUrl_ = [];
-      for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        previewUrl_.push(URL.createObjectURL(file));
-      }
-      setFormData({
-        ...formData,
-        file: files[0],
-        previewUrl: previewUrl_,
-      });
-    }
+  const handleRemoveDate = (index: number) => {
+    const newDates = [...selectedDates];
+    newDates.splice(index, 1);
+    setSelectedDates(newDates);
+    setFormData(prev => ({
+      ...prev,
+      donationPlan: newDates,
+      goal: newDates.reduce((sum, item) => sum + item.amount, 0).toString()
+    }));
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (files: File[]) => {
+    setFormData(prev => ({
+      ...prev,
+      files: files,
+      previewUrls: files.map(file => URL.createObjectURL(file))
+    }));
   };
 
   const nextStep = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`?step=${step + 1}`);
-    setCompletedSteps((prev) => {
-      prev[step] = true;
-      return prev;
+    const newStep = step + 1;
+    router.push(`?step=${newStep}`);
+    setCompletedSteps(prev => {
+      const newCompleted = [...prev];
+      newCompleted[step] = true;
+      return newCompleted;
     });
   };
 
@@ -182,30 +172,60 @@ function PostWriter() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const processedFormData: Record<string, string | File> = {
-      title: formData.title,
-      category: formData.category,
-      description: formData.description,
-      goal: formData.goal,
-      deadline: formData.deadline,
-    };
-    console.log("HEHE: handleSubmit");
-
-    if (formData.file instanceof File) {
-      processedFormData.file = formData.file;
+    
+    // Validate required fields
+    const requiredFields = ["title", "description", "category", "deadline"];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof FormData]);
+    
+    if (missingFields.length > 0) {
+      alert(`Missing required fields: ${missingFields.join(", ")}`);
+      return;
     }
-    const fundID = await submitForm(processedFormData);
-    if (fundID) {
-      router.push(`/fund?fund=${fundID}`);
+
+    if (!formData.files || formData.files.length === 0) {
+      alert("Please upload at least one image");
+      return;
+    }
+
+    if (selectedDates.length === 0) {
+      alert("Please add at least one donation plan entry");
+      return;
+    }
+
+    // Create FormData object for the submission
+    const formDataToSend = new FormData();
+    
+    // Append all text fields
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('category', formData.category);
+    formDataToSend.append('goal', totalAmount.toString());
+    formDataToSend.append('deadline', formData.deadline);
+    formDataToSend.append('donationPlan', JSON.stringify(selectedDates));
+    
+    // Append all files
+    formData.files?.forEach((file) => {
+      formDataToSend.append('files', file);
+    });
+
+    try {
+      const fundID = await submitForm(formDataToSend);
+      if (fundID) {
+        router.push(`/fund?fund=${fundID}`);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Failed to submit form. Please try again.");
     }
   };
 
-  // Animation variants
-  const variants = {
-    initial: { opacity: 0, x: 50 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 },
-  };
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-700">Checking authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -229,7 +249,6 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                {/* Step 0 here */}
                 <div className="bg-white rounded-2xl shadow-md p-6 w-[80vw] h-[100vh] space-y-6 container">
                   <h1 className="text-3xl font-semibold text-green-700 text-center">
                     Tell us your story
@@ -250,7 +269,8 @@ function PostWriter() {
                   </div>
                   <button
                     onClick={nextStep}
-                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full w-full transition-colors"
+                    disabled={!formData.title || !formData.description}
+                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full w-full transition-colors disabled:bg-gray-400"
                   >
                     Continue
                   </button>
@@ -265,7 +285,6 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                {/* Step 1 here */}
                 <div className="h-80vh w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
                   <h1 className="text-2xl font-bold text-center mb-6">
                     Charity Fundraising Campaign
@@ -348,13 +367,28 @@ function PostWriter() {
                         Total Campaign Goal:
                       </span>
                       <span className="text-xl font-bold text-green-600">
-                        VND{totalAmount.toFixed(2)}
+                        ${totalAmount.toFixed(2)}
                       </span>
                     </div>
                   </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Campaign Deadline
+                    </label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={formData.deadline}
+                      onChange={handleChange}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
                   <button
                     onClick={nextStep}
-                    disabled={selectedDates.length == 0 || !totalAmount}
+                    disabled={selectedDates.length === 0 || !formData.deadline}
                     className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 mb-6 mt-6"
                   >
                     Continue
@@ -370,21 +404,24 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                {/* Step 2 here */}
                 <div className="h-80vh w-full sm:w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
                   <div className="m-8">
                     <form className="max-w-sm mx-auto">
                       <label
-                        htmlFor="countries"
-                        className="block mb-2 text-xl font-medium text-gray-900 dark:text-white"
+                        htmlFor="category"
+                        className="block mb-2 text-xl font-medium text-gray-900"
                       >
                         Select category
                       </label>
                       <select
-                        id="countries"
-                        className="text-l bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        className="text-l bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        required
                       >
-                        <option value="" disabled selected>
+                        <option value="" disabled>
                           Select a category
                         </option>
                         {categories.map((category) => (
@@ -395,14 +432,44 @@ function PostWriter() {
                       </select>
                     </form>
                   </div>
-                  <ImageUploader></ImageUploader>
-                  <div>
-                  <button
-                    onClick={handleSubmit}
-                    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 mb-6"
-                  >
-                    Confirm and create
-                  </button>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Upload Cover Image
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFileChange(Array.from(e.target.files))
+                        }
+                      }}
+                      accept="image/*"
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  
+                  {loading && (
+                    <div className="text-center my-4">
+                      <p>Submitting your campaign...</p>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="text-red-500 text-center my-4">
+                      <p>{error}</p>
+                    </div>
+                  )}
+
+                  <div className="mt-auto">
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!formData.category || !formData.files || loading}
+                      className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 w-full"
+                    >
+                      {loading ? "Processing..." : "Confirm and create"}
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -414,8 +481,6 @@ function PostWriter() {
     </div>
   );
 }
-
-
 
 const Wrapper = () => {
   return (

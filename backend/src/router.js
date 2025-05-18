@@ -17,7 +17,8 @@ const {
     getFund,
     getLimitedFunds,
     UpdateUser,
-    createProfileImage 
+    createProfileImage,
+    saveDonationPlan 
 } = require("./db_helpers");
 const auth = require("./middleware/auth");
 const { GoogleClientID, GoogleClientSecret } = require("./config");
@@ -52,7 +53,7 @@ const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter,
-}).single("file");
+}).array("files", 10); // Limit to 10 files
 
 router.get('/api/healthcheck', async (req, res) => {
     var check = await healthcheck();
@@ -180,26 +181,28 @@ router.post("/api/register", async (req, res) => {
 
 router.post("/api/create-fund", auth, upload, async (req, res) => {
     try {
-        const requiredFields = ["title", "category" ,"description", "goal", "deadline"];
+        const requiredFields = ["title", "category", "description", "goal", "deadline", "donationPlan"];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
         }
         
-        if (!req.file) {
-            return res.status(400).json({ error: "Attachment is required." });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: "At least one image is required." });
         }
 
-        let { title, category, description, goal, deadline } = req.body;
+        let { title, category, description, goal, deadline, donationPlan } = req.body;
+        
+        // Parse and validate goal
         goal = parseFloat(goal);
         if (!Number.isFinite(goal) || goal <= 0) {
             return res.status(400).json({ error: "Goal must be a positive number." });
         }
 
+        // Parse and validate deadline
         const deadlineDate = new Date(deadline);
         const today = new Date();
-
         today.setHours(0, 0, 0, 0);
         deadlineDate.setHours(0, 0, 0, 0);
 
@@ -210,29 +213,57 @@ router.post("/api/create-fund", auth, upload, async (req, res) => {
         if (deadlineDate <= today) {
             return res.status(400).json({ error: "Deadline must be at least 1 day from today." });
         }
-           
 
+        // Parse donation plan
+        let parsedDonationPlan;
+        try {
+            parsedDonationPlan = JSON.parse(donationPlan);
+            if (!Array.isArray(parsedDonationPlan)) {
+                throw new Error("Invalid donation plan format");
+            }
+        } catch (e) {
+            return res.status(400).json({ error: "Invalid donation plan format" });
+        }
 
-        const newFund = await createFund(req.user.uid, title,category, description, goal, deadline);
+        // Create the fund
+        const newFund = await createFund(
+            req.user.uid, 
+            title,
+            category, 
+            description, 
+            goal, 
+            deadline,
+            parsedDonationPlan
+        );
 
         if (!newFund) {
             return res.status(500).json({ error: "Fund creation failed" });
         }
 
-        const attachment = await createAttachment({
-            fundID: newFund.fundID, 
-            type: path.extname(req.file.originalname).toLowerCase(),
-            path: req.file.path, 
-        });
+        // Save all attachments
+        const attachments = await Promise.all(
+            req.files.map(async (file) => {
+                return await createAttachment({
+                    fundID: newFund.fundID, 
+                    type: path.extname(file.originalname).toLowerCase(),
+                    path: file.path,
+                });
+            })
+        );
 
-        if (!attachment) {
-            return res.status(500).json({ error: "Attachment creation failed" });
+        if (attachments.some(att => !att)) {
+            return res.status(500).json({ error: "Some attachments failed to save" });
+        }
+
+        const donationPlanSaved = await saveDonationPlan(newFund.fundID, parsedDonationPlan);
+        if (!donationPlanSaved) {
+            return res.status(500).json({ error: "Failed to save donation plan" });
         }
 
         return res.status(200).json({
             message: "Fund created successfully",
             fund: newFund,
-            attachment: attachment,
+            attachments: attachments,
         });
     } catch (error) {
         console.error("Fund creation error:", error);

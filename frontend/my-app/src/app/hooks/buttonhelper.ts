@@ -126,57 +126,35 @@ const useSubmitForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const requiredFields = ["title", "description", "goal", "deadline"];
 
-  const submitForm = useCallback(
-    async (formData: Record<string, string | File>) => {
-      setLoading(true);
-      setError(null);
-      setSuccess(false);
-  
-      const missingFields = requiredFields.filter((field) => !formData[field]);
-      if (missingFields.length > 0) {
-        setError(`Missing required fields: ${missingFields.join(", ")}`);
-        setLoading(false);
-        return;
-      }
+  const submitForm = async (formData: FormData) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
 
-      if (!formData.file || !(formData.file instanceof File)) {
-        setError("A file must be uploaded.");
-        setLoading(false);
-        return;
-      }
-
-      const formDataObject = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value) formDataObject.append(key, value);
+    try {
+      const response = await fetch("/api/create-fund", {
+        method: "POST",
+        body: formData,
       });
-  
-      try {
-        const response = await fetch("/api/create-fund", {
-          method: "POST",
-          body: formDataObject,
-        });
-  
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(errorData || "Failed to submit form");
-        }
-        const responseData = await response.json();
-        const fundID = responseData.fund.fundID;
 
-        setSuccess(true);
-        return fundID;
-      } catch (e: any) {
-        setError(e.message);
-        return null;
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit form");
       }
-    },
-    []
-  );
+
+      const responseData = await response.json();
+      setSuccess(true);
+      return responseData.fund.fundID;
+    } catch (e: any) {
+      setError(e.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return { submitForm, loading, error, success };
-}
+};
 
 export { useRegister, useLogin, useButtonClick, useSubmitForm };
