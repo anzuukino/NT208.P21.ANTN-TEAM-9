@@ -5,3 +5,4 @@ hardhat/node_modules
 
 # API and private key: 
 hardhat/.env
+frontend/my-app/.env

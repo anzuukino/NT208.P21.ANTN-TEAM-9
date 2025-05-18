@@ -21,4 +21,4 @@ COPY . .
 
 # Set the entrypoint script
 # Default command to run when the container starts
-CMD ["npx", "hardhat", "run", "scripts/deploy.js", "--network", "sepolia"]
+CMD ["sh", "-c", "npx hardhat node & sleep 3 && npx hardhat run scripts/deploy.js --network localhost && tail -f /dev/null"]

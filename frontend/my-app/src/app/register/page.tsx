@@ -76,25 +76,24 @@ const RegistrationForm = () => {
     } else {
       setStep(stepParam);
     }
-
   }, [stepParam, step1Completed]);
 
   const nextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.conf_password) {
       setFirstError("Password does not match.");
-      console.log("error")
+      console.log("error");
       return;
     }
-    if(formData.password.length < 8){
-      setFirstError("\nPassword must be at lease 8 characters.")
+    if (formData.password.length < 8) {
+      setFirstError("\nPassword must be at lease 8 characters.");
       return;
     }
-    if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) == false){
-      setFirstError("\nEmail is invalid.")
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) == false) {
+      setFirstError("\nEmail is invalid.");
       return;
     }
-    if(formData.firstname == "" || formData.lastname == ""  ){
+    if (formData.firstname == "" || formData.lastname == "") {
       setFirstError("First name and last name are required.");
       return;
     }
@@ -114,7 +113,7 @@ const RegistrationForm = () => {
     if (formData.password !== formData.conf_password) {
       setFirstError("Password does not match.");
       router.push("?step=1");
-      console.log("error")
+      console.log("error");
     }
     register(formData);
   };

@@ -38,4 +38,10 @@ services:
       restart: unless-stopped
   hardhat:
       build: ./hardhat
+      stdin_open: true
+      tty: true
+      ports: 
+        - '8545:8545'
+      restart: unless-stopped
+  
 
