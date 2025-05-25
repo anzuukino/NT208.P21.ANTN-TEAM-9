@@ -12,7 +12,7 @@ const ProfilePage = () => {
     email: "",
     phone: "",
     identify_no: "",
-    postalCode: "",
+    postal_code: "",
     createdAt: "",
     balance: "",
     profile_pic: "",
@@ -37,7 +37,7 @@ const ProfilePage = () => {
           email: data.email,
           phone: data.phone_no || "N/A",
           identify_no: data.identify_no || "N/A",
-          postalCode: data.postalcode || "N/A",
+          postal_code: data.postal_code || "N/A",
           createdAt: new Date(data.created_at).toLocaleDateString("en-GB"),
           balance: `${parseFloat(data.cash).toFixed(2)}VND`,
           profile_pic: data.ProfileImage?.path || "",
@@ -63,6 +63,10 @@ const ProfilePage = () => {
     });
   };
 
+  const handleGoHome = () => {
+    router.push("/");
+  };
+
   const handleSave = async () => {
     try {
       const res = await fetch("/api/edit-profile", {
@@ -71,7 +75,7 @@ const ProfilePage = () => {
         body: JSON.stringify({
           phone_no: profile.phone,
           identify_no: profile.identify_no,
-          postal_code: profile.postalCode,
+          postal_code: profile.postal_code,
         }),
       });
       if (!res.ok) throw new Error("Failed to update profile");
@@ -81,7 +85,7 @@ const ProfilePage = () => {
         ...profile,
         phone: updated.user.phone_no || "N/A",
         identify_no: updated.user.identify_no || "N/A",
-        postalCode: updated.user.postalcode || "N/A",
+        postal_code: updated.user.postal_code || "N/A",
       };
       setProfile(updatedProfile);
       setOriginalProfile(updatedProfile);
@@ -101,7 +105,15 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-beige-100 flex items-center justify-center p-6">
       <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl p-6 border border-green-300 gap-6 flex flex-col">
         <h2 className="text-2xl font-bold text-green-800 mb-6">Your Profile</h2>
-
+        <button
+          onClick={handleGoHome}
+          className="flex items-center gap-2 text-gray-600 hover:text-green-700 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-md transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to Home
+        </button>
         {/* Profile Picture Section */}
           <div className="flex items-center gap-4">
             {profile.profile_pic ? (
@@ -129,7 +141,7 @@ const ProfilePage = () => {
           {/* Editable fields */}
           <EditableField label="Phone Number" value={profile.phone} onChange={(val) => handleInputChange("phone", val)} />
           <EditableField label="Identity Number" value={profile.identify_no} onChange={(val) => handleInputChange("identify_no", val)} />
-          <EditableField label="Postal Code" value={profile.postalCode} onChange={(val) => handleInputChange("postalCode", val)} />
+          <EditableField label="Postal Code" value={profile.postal_code} onChange={(val) => handleInputChange("postal_code", val)} />
 
           {/* Read-only fields */}
           <ReadOnlyField label="Email" value={profile.email} />
@@ -139,19 +151,21 @@ const ProfilePage = () => {
           </div>
 
           {/* Show Save Changes button only if something has changed */}
-          {isModified && (
-            <button onClick={handleSave} className="w-fit bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-md mt-2">
-              Save Changes
-            </button>
-          )}
+          <div className="flex flex-wrap gap-4 mt-4">
+            {isModified && (
+              <button onClick={handleSave} className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-md">
+                Save Changes
+              </button>
+            )}
 
-          <button
-            type="button"
-            onClick={handleShowHistory}
-            className="max-w-64 mt-4 text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-          >
-            Show history transactions
-          </button>
+            <button
+              type="button"
+              onClick={handleShowHistory}
+              className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+            >
+              Show history transactions
+            </button>
+          </div>
         </div>
       </div>
     </div>

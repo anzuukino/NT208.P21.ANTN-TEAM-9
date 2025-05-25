@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import Footer from "@/components/Footer";
 import { MyNavBar } from "@/components/Header";
-import { div, tr } from "framer-motion/client";
+import { a, div, tr } from "framer-motion/client";
 import { FaTimes } from "react-icons/fa";
 import { MetaMaskInpageProvider } from "@metamask/providers";
 import { ethers } from "ethers";
@@ -92,6 +92,7 @@ const FundDetail = () => {
   const [fund, setFund] = useState<FundData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isErrorVisible, setIsErrorVisible] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [donationAmount, setDonationAmount] = useState("");
   const [donationError, setDonationError] = useState<string | null>(null);
@@ -111,8 +112,37 @@ const FundDetail = () => {
 
   const formRef = useRef<HTMLDivElement>(null);
 
+   useEffect(() => {
+    if (error) {
+      setIsErrorVisible(true);
+
+      const timer = setTimeout(() => {
+        setIsErrorVisible(false);
+      }, 5000); // Auto-close after 5s
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const handleClose = () => setIsErrorVisible(false);
+
   useEffect(() => {
-    setIsOwner(true);
+    const checkOwner = async () =>{
+      try {
+        const dataRes = await checkLogin();
+        const data = await fetch(`/api/fund/${params.fund}`);
+        const fundRes = await data.json();
+        if (dataRes.uid === fundRes.uid){
+          setIsOwner(true);
+        }
+      } catch (e: any) {
+        setError(e.message);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkOwner();
     setFund(newFund);
     setFundID(newFund.fundID);
   }, []);
@@ -142,7 +172,7 @@ const FundDetail = () => {
         setFund(data);
       } catch (e: any) {
         setError(e.message);
-        // router.push("/login");
+        router.push("/login");
       } finally {
         setLoading(false);
       }
@@ -225,7 +255,8 @@ const FundDetail = () => {
               showError("Please switch to Sepolia Testnet");
             }
           }
-        } catch (error) {
+        } catch (error: any) {
+          showError(error.message);
           console.error(error);
         }
       }
@@ -369,7 +400,8 @@ const FundDetail = () => {
   }
 
   // ================================HANDLE SUBMIT==============================
-  const handleDonationSubmit = async () => {
+  const handleDonationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setDonationError(null);
     setDonationSuccess(null);
 
@@ -406,6 +438,8 @@ const FundDetail = () => {
       tx_val!.textContent = "Transaction value: " + transaction?.hash.substring(0, 10) + "...";
 
       (tx_val as HTMLAnchorElement)!.href = `https://sepolia.etherscan.io/tx/${transaction.hash}`
+
+      closeForm();
     } catch (error: any) {
       setDonationError(error.message);
     }
@@ -596,7 +630,7 @@ const FundDetail = () => {
             className="bg-white shadow-xl shadow-black
         rounded-xl w-11/12 md:w-2/5  p-6"
           >
-            <form className="flex flex-col gap-2">
+            <form className="flex flex-col gap-2" onSubmit={handleDonationSubmit}>
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-2xl">Donate</h3>
                 <button
@@ -686,7 +720,6 @@ const FundDetail = () => {
                 className="inline-block px-6 py-2.5 bg-green-600
             text-white font-medium text-lg leading-tight
             rounded-full shadow-md hover:bg-green-700 mt-5"
-                onClick={handleDonationSubmit}
               >
                 DONATE
               </button>
@@ -697,43 +730,44 @@ const FundDetail = () => {
 
       {/* ==============================HIDDEN TOAST================================ */}
       {
-        error !== "" &&
-        (<div id="toast-danger" className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
-          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
-            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
-            </svg>
-            <span className="sr-only">Error icon</span>
+        error && isErrorVisible && (
+          <div id="toast-danger" className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
+            <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
+              <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
+              </svg>
+              <span className="sr-only">Error icon</span>
+            </div>
+            <div id="danger-text" className="ms-3 text-sm font-normal">{error}</div>
+            <button onClick={handleClose} type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-danger" aria-label="Close">
+              <span className="sr-only">Close</span>
+              <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+              </svg>
+            </button>
           </div>
-          <div id="danger-text" className="ms-3 text-sm font-normal"> {error?.toString()} </div>
-          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-danger" aria-label="Close">
-            <span className="sr-only">Close</span>
-            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-            </svg>
-          </button>
-        </div>)
+        )
       }
 
       {
-        success !== "" &&
-        (<div id="toast-success" className=" fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
-          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
-            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-            </svg>
-            <span className="sr-only">Check icon</span>
+        success && (
+          <div id="toast-success" className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
+            <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+              <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+              </svg>
+              <span className="sr-only">Check icon</span>
+            </div>
+            <div id="success-text" className="ms-3 text-sm font-normal">{success}</div>
+            <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
+              <span className="sr-only">Close</span>
+              <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+              </svg>
+            </button>
           </div>
-          <div id="success-text" className="ms-3 text-sm font-normal">{success?.toString()}</div>
-          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
-            <span className="sr-only">Close</span>
-            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-            </svg>
-          </button>
-        </div>
         )
-      }
+}
 
     </div>
   );

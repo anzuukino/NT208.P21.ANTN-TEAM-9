@@ -395,7 +395,7 @@ router.get("/api/check-information", auth, async (req, res) => {
         return res.status(200).json({ message: "User information is complete" });
     }
 
-    const requiredFields = ["postalcode", "phone_no", "identify_no"];
+    const requiredFields = ["postal_code", "phone_no", "identify_no"];
     const missingFields = requiredFields.filter(field => !user[field] || user[field].trim() === "");
     if (missingFields.length > 0) {
         return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}. Please complete your profile at /profile.` });
@@ -451,6 +451,10 @@ router.post("/api/upload-profile-image", auth, upload, async (req, res) => {
         console.error("Error uploading profile image:", err);
         return res.status(500).json({ error: "Internal server error" });
     }
+});
+
+router.post("/api/update-fund", auth, async (req, res) => {
+
 });
 
 

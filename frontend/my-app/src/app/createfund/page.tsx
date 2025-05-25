@@ -230,7 +230,7 @@ function PostWriter() {
   return (
     <div>
       <MyNavBar></MyNavBar>
-
+      <div className="min-h-screen bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/bgtree2.jpg')" }}>
       <div className="min-h-full bg-gradient-to-br from-[#f5f2e9] to-[#F9FAFB] flex items-center justify-center p-4 font-[nunito]">
         <div className="bg-gradient-to-br from-[#f0f2e9] to-[#f1f4ea] rounded-2xl p-6 w-screen h-screen space-y-6 container">
           <StepIndicator
@@ -253,14 +253,14 @@ function PostWriter() {
                   <h1 className="text-3xl font-semibold text-green-700 text-center">
                     Tell us your story
                   </h1>
-                  <div className="border border-green-300 rounded-md w-[100%] min-h-[3rem] overflow-auto p-2">
+                  <div className="border border-green-300 rounded-md w-[100%] min-h-[3rem] overflow-auto p-2 text-gray-900">
                     <HeadingEditor
                       value={formData.title}
                       onChange={handleChange}
                       name="title"
                     />
                   </div>
-                  <div className="border border-green-300 rounded-md w-[100%] min-h-[32rem] max-h-[8rem] overflow-auto p-2">
+                  <div className="border border-green-300 rounded-md w-[100%] min-h-[32rem] max-h-[8rem] overflow-auto p-2 text-gray-900">
                     <CustomEditor
                       value={formData.description}
                       onChange={handleChange}
@@ -286,7 +286,7 @@ function PostWriter() {
                 exit={{ opacity: 0, x: -50 }}
               >
                 <div className="h-80vh w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
-                  <h1 className="text-2xl font-bold text-center mb-6">
+                  <h1 className="text-2xl font-bold text-center mb-6 text-gray-900">
                     Charity Fundraising Campaign
                   </h1>
 
@@ -299,7 +299,7 @@ function PostWriter() {
                         type="date"
                         value={currentDate}
                         onChange={(e) => setCurrentDate(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900" 
                       />
                     </div>
 
@@ -313,7 +313,7 @@ function PostWriter() {
                         onChange={(e) => setAmount(e.target.value)}
                         min="1"
                         placeholder="Enter donation amount"
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="text-gray-900 w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -327,7 +327,7 @@ function PostWriter() {
                   </button>
 
                   <div className="flex-1 overflow-auto">
-                    <h2 className="text-lg font-semibold mb-3">
+                    <h2 className="text-lg font-semibold mb-3 text-gray-900">
                       Selected Dates & Amounts
                     </h2>
                     {selectedDates.length === 0 ? (
@@ -363,7 +363,7 @@ function PostWriter() {
 
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold">
+                      <span className="text-lg font-bold text-gray-900">
                         Total Campaign Goal:
                       </span>
                       <span className="text-xl font-bold text-green-600">
@@ -382,17 +382,25 @@ function PostWriter() {
                       value={formData.deadline}
                       onChange={handleChange}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="text-gray-900 w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
 
-                  <button
-                    onClick={nextStep}
-                    disabled={selectedDates.length === 0 || !formData.deadline}
-                    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 mb-6 mt-6"
-                  >
-                    Continue
-                  </button>
+                  <div className="flex space-x-4 mt-6">
+                    <button
+                      onClick={prevStep}
+                      className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={nextStep}
+                      disabled={selectedDates.length === 0 || !formData.deadline}
+                      className="bg-blue-600 flex-grow text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                    >
+                      Continue
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -445,7 +453,7 @@ function PostWriter() {
                         }
                       }}
                       accept="image/*"
-                      className="w-full p-2 border rounded"
+                      className="w-full p-2 border rounded text-gray-900"
                       required
                     />
                   </div>
@@ -463,13 +471,21 @@ function PostWriter() {
                   )}
 
                   <div className="mt-auto">
-                    <button
-                      onClick={handleSubmit}
-                      disabled={!formData.category || !formData.files || loading}
-                      className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 w-full"
-                    >
-                      {loading ? "Processing..." : "Confirm and create"}
-                    </button>
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={prevStep}
+                        className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        disabled={!formData.category || !formData.files || loading}
+                        className="bg-blue-600 flex-grow text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                      >
+                        {loading ? "Processing..." : "Confirm and create"}
+                      </button>
+                    </div>
                   </div>
                   {error && <p className="text-red-500 text-center">{error}</p>}
                   {loading && (
@@ -488,6 +504,7 @@ function PostWriter() {
         <Footer></Footer>
       </div>
     </div>
+  </div>
   );
 }
 
