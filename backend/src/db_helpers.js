@@ -79,7 +79,7 @@ const Fund = sequelize.define("Fund", {
     target_money: DataTypes.DECIMAL,
     current_money: DataTypes.DECIMAL,
     created_at: DataTypes.DATE,
-    categories: DataTypes.STRING,
+    category: DataTypes.STRING,
     title: DataTypes.TEXT,
     done: DataTypes.BOOLEAN,
     deadline: DataTypes.DATE,
@@ -282,7 +282,7 @@ async function createFund(userid, title, category, description, goal, deadline, 
             target_money: goal,
             current_money: 0,
             created_at: new Date(),
-            categories: category,
+            category: category,
             description: description,
             title,
             done: false,
@@ -614,6 +614,32 @@ async function saveDonationPlan(fundID, donationPlan) {
     }
 }
 
+async function updateFund(fundID, updates) {
+    try {
+        const fundExists = await Fund.count({ where: { fundID } });
+        if (fundExists === 0) {
+            
+            return false;
+        }
+
+        const allowedFieldsToUpdate = ['title', 'category', 'description'];
+
+        const [numberOfAffectedRows] = await Fund.update(updates, {
+            where: { fundID },
+            fields: allowedFieldsToUpdate
+        });
+
+        if (numberOfAffectedRows > 0) {
+            return true;
+        } else {
+            return false;
+        }
+
+    } catch (error) {
+        return false;
+    }
+}
+
 module.exports = {
     getUserByIDprivate,
     getUserByIDpublic,
@@ -631,5 +657,6 @@ module.exports = {
     getLimitedFunds,
     UpdateUser,
     createProfileImage,
-    saveDonationPlan
+    saveDonationPlan,
+    updateFund
 };

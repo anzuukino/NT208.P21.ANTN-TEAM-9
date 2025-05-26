@@ -18,7 +18,8 @@ const {
     getLimitedFunds,
     UpdateUser,
     createProfileImage,
-    saveDonationPlan 
+    saveDonationPlan ,
+    updateFund
 } = require("./db_helpers");
 const auth = require("./middleware/auth");
 const { GoogleClientID, GoogleClientSecret } = require("./config");
@@ -454,7 +455,21 @@ router.post("/api/upload-profile-image", auth, upload, async (req, res) => {
 });
 
 router.post("/api/update-fund", auth, async (req, res) => {
-
+    const { fundID, title, category, description } = req.body;
+    if (!fundID || !title || !category || !description) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+    const updated = { title, category, description };
+    try {
+        const updatedFund = await updateFund(fundID, updated);
+        if (!updatedFund) {
+            return res.status(404).json({ error: "Fund not found or update failed" });
+        }
+        return res.status(200).json({ message: "Fund updated successfully"});
+    } catch (error) {
+        console.error("Error updating fund:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 

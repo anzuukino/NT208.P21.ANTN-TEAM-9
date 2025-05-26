@@ -659,6 +659,7 @@ function PostWriter() {
                     </label>
                     <input
                       type="file"
+                      multiple
                       onChange={(e) => {
                         if (e.target.files) {
                           handleFileChange(Array.from(e.target.files))
