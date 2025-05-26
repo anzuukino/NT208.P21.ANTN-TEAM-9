@@ -36,6 +36,7 @@ export declare namespace FundManager {
     current_phase: BigNumberish;
     extended: boolean;
     deadline_poc: BigNumberish;
+    banned: boolean;
   };
 
   export type Fund_tStructOutput = [
@@ -49,7 +50,8 @@ export declare namespace FundManager {
     current_value: bigint[],
     current_phase: bigint,
     extended: boolean,
-    deadline_poc: bigint
+    deadline_poc: bigint,
+    banned: boolean
   ] & {
     fID: bigint;
     owner: string;
@@ -62,6 +64,7 @@ export declare namespace FundManager {
     current_phase: bigint;
     extended: boolean;
     deadline_poc: bigint;
+    banned: boolean;
   };
 
   export type DonorEntryStruct = {
@@ -83,6 +86,7 @@ export interface FundManagerInterface extends Interface {
       | "AddFund"
       | "Donate"
       | "ExtendDay"
+      | "GetCurrentFundMoney"
       | "GetFund"
       | "GetPlan"
       | "GetState"
@@ -116,6 +120,10 @@ export interface FundManagerInterface extends Interface {
   encodeFunctionData(
     functionFragment: "ExtendDay",
     values: [BigNumberish, BigNumberish[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "GetCurrentFundMoney",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "GetFund",
@@ -159,6 +167,10 @@ export interface FundManagerInterface extends Interface {
   decodeFunctionResult(functionFragment: "AddFund", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "Donate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ExtendDay", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "GetCurrentFundMoney",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "GetFund", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "GetPlan", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "GetState", data: BytesLike): Result;
@@ -350,6 +362,12 @@ export interface FundManager extends BaseContract {
     "nonpayable"
   >;
 
+  GetCurrentFundMoney: TypedContractMethod<
+    [fid: BigNumberish],
+    [[bigint, bigint]],
+    "view"
+  >;
+
   GetFund: TypedContractMethod<
     [fid: BigNumberish],
     [FundManager.Fund_tStructOutput],
@@ -395,7 +413,17 @@ export interface FundManager extends BaseContract {
   fundOf: TypedContractMethod<
     [arg0: AddressLike, arg1: BigNumberish],
     [
-      [bigint, string, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        bigint,
+        boolean
+      ] & {
         fID: bigint;
         owner: string;
         date_created: bigint;
@@ -404,6 +432,7 @@ export interface FundManager extends BaseContract {
         current_phase: bigint;
         extended: boolean;
         deadline_poc: bigint;
+        banned: boolean;
       }
     ],
     "view"
@@ -412,7 +441,17 @@ export interface FundManager extends BaseContract {
   funds: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, string, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        bigint,
+        boolean
+      ] & {
         fID: bigint;
         owner: string;
         date_created: bigint;
@@ -421,6 +460,7 @@ export interface FundManager extends BaseContract {
         current_phase: bigint;
         extended: boolean;
         deadline_poc: bigint;
+        banned: boolean;
       }
     ],
     "view"
@@ -453,6 +493,9 @@ export interface FundManager extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "GetCurrentFundMoney"
+  ): TypedContractMethod<[fid: BigNumberish], [[bigint, bigint]], "view">;
   getFunction(
     nameOrSignature: "GetFund"
   ): TypedContractMethod<
@@ -508,7 +551,17 @@ export interface FundManager extends BaseContract {
   ): TypedContractMethod<
     [arg0: AddressLike, arg1: BigNumberish],
     [
-      [bigint, string, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        bigint,
+        boolean
+      ] & {
         fID: bigint;
         owner: string;
         date_created: bigint;
@@ -517,6 +570,7 @@ export interface FundManager extends BaseContract {
         current_phase: bigint;
         extended: boolean;
         deadline_poc: bigint;
+        banned: boolean;
       }
     ],
     "view"
@@ -526,7 +580,17 @@ export interface FundManager extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, string, bigint, bigint, bigint, bigint, boolean, bigint] & {
+      [
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        bigint,
+        boolean
+      ] & {
         fID: bigint;
         owner: string;
         date_created: bigint;
@@ -535,6 +599,7 @@ export interface FundManager extends BaseContract {
         current_phase: bigint;
         extended: boolean;
         deadline_poc: bigint;
+        banned: boolean;
       }
     ],
     "view"

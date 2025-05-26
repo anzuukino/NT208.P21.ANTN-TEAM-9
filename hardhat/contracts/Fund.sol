@@ -22,6 +22,7 @@ contract FundManager{
     uint current_phase;
     bool extended;
     uint deadline_poc;
+    bool banned;
   }
 
   address manager;
@@ -32,6 +33,7 @@ contract FundManager{
     address payable donor;
     uint amount;
     uint phase;
+    uint timestamp;
   }
 
   mapping (uint => donorEntry[]) public donors;
@@ -97,7 +99,8 @@ contract FundManager{
       current_value: initialValues,
       current_phase: 0,
       extended: false,
-      deadline_poc: 0
+      deadline_poc: 0,
+      banned: false
     });
     funds[fid] = new_fund;
     no_funds++;
@@ -120,7 +123,8 @@ contract FundManager{
     donorEntry memory entry = donorEntry({
       donor: payable(msg.sender),
       amount: msg.value,
-      phase: current_phase_
+      phase: current_phase_,
+      timestamp: block.timestamp
     });
     donors[fid].push(entry);
     emit DonateSuccess(fid, msg.sender ,donate_val, block.timestamp);
@@ -172,9 +176,15 @@ contract FundManager{
     return current_fund.end_of_phase;
   }
 
-  function GetSubmitter(uint fid) public view returns (donorEntry[] memory){
+  function GetDonor(uint fid) public view returns (donorEntry[] memory){
     require(fundExist[fid], "Fund does not exist");
     return donors[fid];
+  }
+
+  function GetCurrentFundMoney(uint fid) public view returns (uint256, uint256){
+    require(fundExist[fid], "Fund does not exist");
+    fund_t storage current_fund = funds[fid];
+    return (current_fund.current_phase, current_fund.current_value[current_fund.current_phase]);
   }
 
   function GetState(uint fid) public view returns(Status){
