@@ -15,6 +15,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import Footer from "@/components/Footer";
 import { MyNavBar } from "@/components/Header";
+import { ethers } from "ethers";
+import dotenv from "dotenv";
+import FundManagerArtifact from '../artifacts/contracts/Fund.sol/FundManager.json' with  {type: 'json'};
+import { BigNumberish } from "ethers";
+
+require('dotenv').config({ path: '../../../.env' });
+
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+const CONTRACT_ABI = FundManagerArtifact.abi;
+
 
 const categories = [
   "Campaigns",
@@ -67,6 +79,8 @@ function PostWriter() {
   const [selectedDates, setSelectedDates] = useState<DonationDate[]>([]);
   const [currentDate, setCurrentDate] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
+  const [error_msg, setError] = useState<string | null>("");
+  const [success_msg, setSuccess] = useState<string | null>("");
 
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -79,6 +93,15 @@ function PostWriter() {
     donationPlan: [],
   });
 
+
+    // ========================= MetaMask part ============================
+  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
+  const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [account, setAccount] = useState<string>('');
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [networkName, setNetworkName] = useState<string>('');
+
   const totalAmount = selectedDates.reduce((sum, item) => sum + item.amount, 0);
 
   useEffect(() => {
@@ -90,6 +113,167 @@ function PostWriter() {
     }
     setStep(stepParam);
   }, [stepParam, completedSteps, router]);
+
+    const initializeContract = (signer: ethers.JsonRpcSigner) => {
+      try {
+        const newContract = new ethers.Contract(CONTRACT_ADDRESS!, CONTRACT_ABI, signer);
+        setContract(newContract);
+  
+        return newContract;
+      } catch (error: any) {
+        console.error("Contract initialization error:", error);
+        showError("Failed to initialize contract: " + error.message);
+        return null;
+      }
+    };
+  
+  useEffect(() => {
+    const checkIfConnected = async () => {
+      if (isMetaMaskInstalled()) {
+        try {
+          const windowWithEthereum = window;
+          const accounts: any = await windowWithEthereum.ethereum?.request({ method: 'eth_requestAccounts' });
+
+          if (accounts.length < 0) {
+            throw new Error("No accounts found. Please connect your MetaMask wallet.");
+          }
+          const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
+
+          if (chainId === "0x7a69") {
+            const provider = new ethers.BrowserProvider(windowWithEthereum.ethereum!);
+            setProvider(provider);
+
+            const signer = await provider.getSigner();
+            setSigner(signer);
+
+            setAccount(accounts[0]);
+            // console.log
+            // Initialize contract
+            console.log("Address: " + CONTRACT_ADDRESS);
+            console.log("ENV: " + JSON.stringify(process.env, null, 2));
+            initializeContract(signer);
+
+            // Setup event listeners
+          } else {
+            showError("Please switch to Sepolia Testnet");
+            await switchToSepoliaNetwork();
+          }
+          
+        } catch (error : any) {
+          console.error(error);
+          showError("Error checking connection: " + error.message);
+        }
+      }
+      else {
+        showError("MetaMask is not installed. Please install MetaMask to use this dApp.");
+      }
+    };
+
+    checkIfConnected();
+    connectToMetaMask
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isMetaMaskInstalled = () => {
+    return Boolean(window.ethereum && window.ethereum.isMetaMask);
+  };
+
+  const connectToMetaMask = async () => {
+    if (!isMetaMaskInstalled()) {
+      showError("MetaMask is not installed. Please install MetaMask to use this dApp.");
+      return;
+    }
+
+    try {
+
+      const windowWithEthereum = window;
+
+      // Request account access
+      const accounts: any = await windowWithEthereum.ethereum?.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      setAccount(account);
+
+      // Initialize provider and signer
+      const provider = new ethers.BrowserProvider(windowWithEthereum.ethereum!);
+      setProvider(provider);
+
+      const signer = await provider.getSigner();
+      setSigner(signer);
+
+      // Check if we're on Sepolia (chainId 11155111 or 0xaa36a7)
+      const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
+      if (chainId !== '0x7a69') {
+        showError("Please switch to Sepolia Testnet");
+        await switchToSepoliaNetwork();
+        return;
+      }
+      setNetworkName( chainId.toString());
+      setIsConnected(true);
+
+      // Initialize contract
+      const newContract = initializeContract(signer);
+
+      setContract(newContract);
+
+    } catch (error: any) {
+      console.error(error);
+      showError("Error connecting to MetaMask: " + error.message);
+    }
+  };
+
+  const showError = (msg: string) => {
+    setError(msg);
+    console.log(msg);
+  }
+
+  const showSuccess = (msg: string) => {
+    setSuccess(msg);
+  }
+
+  async function switchToSepoliaNetwork() {
+    try {
+      await window.ethereum?.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x7a69' }], // Sepolia chainId
+      });
+      return true;
+    } catch (error: any) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (error.code === 4902) {
+        try {
+          await window.ethereum?.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x7a69', //Sepolia: 0xaa36a7 Local: 1337
+              chainName: 'Localhost 8545', // Sepolia Testnet
+              nativeCurrency: {
+                name: 'Sepolia ETH',
+                symbol: 'ETH',
+                decimals: 18
+              },
+              // Production url
+              // rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`], // Replace with your Infura key
+
+              // Development url
+              rpcUrls: ["http://localhost:8545"],
+              blockExplorerUrls: ['https://sepolia.etherscan.io']
+            }]
+          });
+
+
+          return true;
+        } catch (addError: any) {
+          showError("Failed to add Sepolia network: " + addError.message);
+          return false;
+        }
+      } else {
+        showError("Failed to switch to Sepolia network: " + error.message);
+        return false;
+      }
+    }
+  }
+
+  // ========================= END of MetaMask part ============================
 
   useEffect(() => {
     const checkUserLogin = async () => {
@@ -170,6 +354,24 @@ function PostWriter() {
     router.push(`?step=${step > 0 ? step - 1 : 0}`);
   };
 
+  function convertDonations(donations: DonationDate[]): { dates: number[]; amounts: number[] } {
+    const dates: number[] = [];
+    const amounts: number[] = [];
+
+    for (const donation of donations) {
+      dates.push(new Date(donation.date).getTime()); // convert to timestamp (ms)
+      amounts.push(donation.amount);
+    }
+
+    return { dates, amounts };
+  }
+
+  function hashUUID(uuid: string): bigint{
+    const hashed = ethers.keccak256(ethers.toUtf8Bytes(uuid));
+    const bigNumber = BigInt(hashed.slice(0, 34));
+    return bigNumber;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -211,6 +413,16 @@ function PostWriter() {
     try {
       const fundID = await submitForm(formDataToSend);
       if (fundID) {
+        debugger;
+        console.log("Fund ID:", fundID);
+        const { dates, amounts } = convertDonations(selectedDates);
+        const transaction = await contract?.AddFund(hashUUID(fundID), dates, amounts);
+        const receipt = await transaction?.wait();
+        console.log("Transaction receipt:", receipt);
+        if (receipt?.status !== 1) {
+          alert('error message: '+ receipt?.status.toString());
+          return;
+        }
         router.push(`/fund?fund=${fundID}`);
       }
     } catch (error) {
@@ -305,7 +517,7 @@ function PostWriter() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Amount ($)
+                        Amount (VND)
                       </label>
                       <input
                         type="number"
@@ -346,7 +558,7 @@ function PostWriter() {
                                 {new Date(item.date).toLocaleDateString()}
                               </span>
                               <span className="ml-4 text-green-600">
-                                ${item.amount.toFixed(2)}
+                                VND{item.amount.toFixed(2)}
                               </span>
                             </div>
                             <button
@@ -367,7 +579,7 @@ function PostWriter() {
                         Total Campaign Goal:
                       </span>
                       <span className="text-xl font-bold text-green-600">
-                        ${totalAmount.toFixed(2)}
+                        VND{totalAmount.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -503,6 +715,46 @@ function PostWriter() {
         </div>
         <Footer></Footer>
       </div>
+
+            {/* ==============================HIDDEN TOAST================================ */}
+      {
+        error_msg !== "" &&
+        (<div id="toast-danger" className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
+          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
+            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
+            </svg>
+            <span className="sr-only">Error icon</span>
+          </div>
+          <div id="danger-text" className="ms-3 text-sm font-normal"> {error_msg?.toString()} </div>
+          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-danger" aria-label="Close">
+            <span className="sr-only">Close</span>
+            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+            </svg>
+          </button>
+        </div>)
+      }
+
+      {
+        success_msg !== "" &&
+        (<div id="toast-success" className=" fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
+          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+            </svg>
+            <span className="sr-only">Check icon</span>
+          </div>
+          <div id="success-text" className="ms-3 text-sm font-normal">{success_msg?.toString()}</div>
+          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
+            <span className="sr-only">Close</span>
+            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+            </svg>
+          </button>
+        </div>
+        )
+      }
     </div>
   </div>
   );

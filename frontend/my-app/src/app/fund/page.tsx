@@ -20,10 +20,9 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 import FundManagerArtifact from '../artifacts/contracts/Fund.sol/FundManager.json' with  {type: 'json'};
 
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config({ path: '../../../.env' });
 
-const INFURA_API_KEY = process.env.INFURA_API_KEY;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const INFURA_API_KEY = process.env.NEXT_PUBLIC_INFURA_API_KEY;
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 const CONTRACT_ABI = FundManagerArtifact.abi;
 
@@ -110,6 +109,10 @@ const FundDetail = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [networkName, setNetworkName] = useState<string>('');
 
+  // ========================= DONORS ============================
+  const [donors, setDonors] = useState([]);
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
   const formRef = useRef<HTMLDivElement>(null);
 
    useEffect(() => {
@@ -201,8 +204,8 @@ const FundDetail = () => {
 
       if (!vndPerEth) throw new Error("VND rate not found in response");
 
-      const ethAmount = vndAmount / vndPerEth;
-      return BigInt(ethAmount);
+      const ethAmount =   BigInt(vndAmount) * BigInt(1e18 * 10**5) / BigInt(Math.floor(vndPerEth * 10**5));
+      return BigInt(ethAmount) ;
     } catch (error) {
       console.error("Currency conversion error:", error);
       throw error;
@@ -247,7 +250,8 @@ const FundDetail = () => {
               // console.log
               // Initialize contract
               console.log("Address: " + CONTRACT_ADDRESS);
-              console.log("ENV: " + JSON.stringify(process.env, null, 2));
+              console.log("ENV: " + JSON.stringify(process.env));
+
               initializeContract(signer);
 
               // Setup event listeners
@@ -261,8 +265,6 @@ const FundDetail = () => {
         }
       }
     };
-
-
 
     checkIfConnected();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,7 +295,8 @@ const FundDetail = () => {
     return Boolean(window.ethereum && window.ethereum.isMetaMask);
   };
 
-  const connectToMetaMask = async () => {
+  const connectToMetaMask = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
     if (!isMetaMaskInstalled()) {
       showError("MetaMask is not installed. Please install MetaMask to use this dApp.");
       return;
@@ -396,12 +399,19 @@ const FundDetail = () => {
     if (amount < BigInt(0)) {
       throw new Error("Negative amount");
     }
-    return contract?.Donate(fundID, { value: amount })
+    return contract?.Donate(hashUUID(fundID), { value: amount })
   }
 
   // ================================HANDLE SUBMIT==============================
-  const handleDonationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  function hashUUID(uuid: string): bigint{
+    const hashed = ethers.keccak256(ethers.toUtf8Bytes(uuid));
+    const bigNumber = BigInt(hashed.slice(0, 34));
+    return bigNumber;
+  }
+
+  const handleDonationSubmit = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
     setDonationError(null);
     setDonationSuccess(null);
 
@@ -410,38 +420,95 @@ const FundDetail = () => {
       setDonationError("Please enter a valid donation amount.");
       return;
     }
-    const transaction = await donateToChain(await convertVNDToETH(amount))
 
     try {
-      const response = await fetch("/api/donate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fund_id: params.fund, amount }),
-        credentials: "include",
-      });
+      const transaction = await donateToChain(await convertVNDToETH(amount))
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Donation failed. Please try again."
-        );
-      }
+      // const response = await fetch("/api/donate", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ fund_id: params.fund, amount }),
+      //   credentials: "include",
+      // });
 
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(
+      //     errorData.error || "Donation failed. Please try again."
+      //   );
+      // }
+
+
+      // location.reload();
+      const info = document.querySelector(".info-cont");
+      info?.classList.remove("hidden");
+      const tx_val = document.querySelector("#transaction-status");
+      tx_val!.textContent = "Transaction value: " + transaction?.hash.substring(0, 32) + "...";
+
+      (tx_val as HTMLAnchorElement)!.href = `https://sepolia.etherscan.io/tx/${transaction.hash}`
       setDonationSuccess("Donation successful!");
       setShowForm(false);
       setDonationAmount("");
       setSuccess("Transaction success");
-      // location.reload();
-      const info = document.querySelector("#transaction-info");
-      info?.classList.remove("hidden");
-      const tx_val = document.querySelector("#transaction-status");
-      tx_val!.textContent = "Transaction value: " + transaction?.hash.substring(0, 10) + "...";
-
-      (tx_val as HTMLAnchorElement)!.href = `https://sepolia.etherscan.io/tx/${transaction.hash}`
-
-      closeForm();
     } catch (error: any) {
-      setDonationError(error.message);
+      console.error("Donation error:", error.message);
+      setError(error.message);
+    }
+  };
+
+  // =========================== GET DATA FROM CHAIN ======================
+
+    const formatAmount = (amount: string | number): string => {
+    try {
+      const eth = Number(amount) / Math.pow(10, 18);
+      return `${eth.toFixed(6)} ETH`;
+    } catch {
+      return amount.toString();
+    }
+  };
+
+  useEffect(() => {
+    fetchDonors();
+  }, [contract, fundID]);
+
+  const truncateAddress = (address: string): string => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  interface donor_t{
+    id: number;
+    address: string;
+    name: string;
+    amount: string | number;
+    date: string;
+    timestamp: string | number;
+  }
+  const fetchDonors = async () => {
+    if (!contract || !fundID) return;
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const fid = await hashUUID(fundID);
+      const donorList = await contract.GetDonor(fid);
+      
+      // Transform the data to a more usable format
+      const formattedDonors = donorList.map((donor: donor_t, index: number) => ({
+        id: index,
+        address: donor.address,
+        amount: donor.amount,
+        timestamp: donor.timestamp,
+        date: new Date(Number(donor.timestamp) * 1000).toLocaleDateString()
+      }));
+      
+      setDonors(formattedDonors);
+    } catch (err : any) {
+      console.error('Error fetching donors:', err);
+      setError('Failed to fetch donors: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -455,9 +522,9 @@ const FundDetail = () => {
     connectToMetaMask();
   };
 
-  // if (loading) return <p className="text-center">Loading...</p>;
-  // if (!fund) return <p className="text-center text-red-500">Fund not found.</p>;
-  // if (error) return <p className="text-center text-red-500">{error}</p>;
+  if (loading) return <p className="text-center">Loading...</p>;
+  if (!fund) return <p className="text-center text-red-500">Fund not found.</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
 
 
 
@@ -592,25 +659,46 @@ const FundDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                    <th
-                      scope="row"
-                      className="px-6 py-4 font-medium w-[30%] text-gray-900 whitespace-nowrap dark:text-white"
-                    >
-                      Apple MacBook Pro 17"
-                    </th>
-                    <td className="px-6 py-4">Silver</td>
-                    <td className="px-6 py-4">Laptop</td>
-                    <td className="px-6 py-4">$2999</td>
-                    <td className="px-6 py-4 text-right">
-                      <a
-                        href="#"
-                        className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                      >
-                        See bills
-                      </a>
-                    </td>
-                  </tr>
+                  {loading ? (
+          <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+            <td colSpan={5} className="px-6 py-4 text-center">
+              Loading donors...
+            </td>
+          </tr>
+        ) : donors.length === 0 ? (
+          <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+            <td colSpan={5} className="px-6 py-4 text-center">
+              No donors found for this fund.
+            </td>
+          </tr>
+        ) : (
+          donors.map((donor : donor_t) => (
+            <tr key={donor.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+              <th
+                scope="row"
+                className="px-6 py-4 font-medium w-[30%] text-gray-900 whitespace-nowrap dark:text-white"
+                title={donor.address}
+              >
+                {truncateAddress(donor.address)}
+              </th>
+              <td className="px-6 py-4">{donor.name}</td>
+              <td className="px-6 py-4">{formatAmount(donor.amount)}</td>
+              <td className="px-6 py-4">{donor.date}</td>
+              <td className="px-6 py-4 text-right">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigator.clipboard.writeText(donor.address);
+                  }}
+                  className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                >
+                  Copy Address
+                </a>
+              </td>
+            </tr>
+          ))
+        )}
                 </tbody>
               </table>
             </div>
@@ -704,12 +792,13 @@ const FundDetail = () => {
             text-white font-medium text-lg leading-tight
             rounded-full shadow-md hover:bg-green-700 mt-5"
                 onClick={connectToMetaMask}
+                disabled={isConnected}
               >
-                CONNECT TO METAMASK
+                {isConnected ? "CONNECTED" : "CONNECT TO METAMASK"}
               </button>
               {/* Transaction info */}
               <div className="hidden info-cont">
-                <div className="font-semibold text-gray-900 text-md">
+                <div className="font-semibold text-gray-900 text-md" id="transaction-info">
                   Transaction info
                 </div>
                 <div className="max-w-xl my-4 bg-blue-400/50 rounded-xs shadow-lg">
@@ -767,8 +856,7 @@ const FundDetail = () => {
             </button>
           </div>
         )
-}
-
+      }
     </div>
   );
 };
