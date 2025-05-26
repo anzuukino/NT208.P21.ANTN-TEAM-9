@@ -260,8 +260,6 @@ const FundDetail = () => {
 
       const ethAmount =   BigInt(vndAmount) * BigInt(1e18 * 10**5) / BigInt(Math.floor(vndPerEth * 10**5));
       return BigInt(ethAmount) ;
-      const ethAmount = vndAmount / vndPerEth;
-      return ethers.parseEther(ethAmount.toFixed(18));
     } catch (error) {
       console.error("Currency conversion error:", error);
       throw error;
@@ -286,25 +284,35 @@ const FundDetail = () => {
     const checkIfConnected = async () => {
       if (isMetaMaskInstalled()) {
         try {
-          const accounts: any = await window.ethereum?.request({ method: 'eth_accounts' });
+          const windowWithEthereum = window;
+          const accounts: any = await windowWithEthereum.ethereum?.request({ method: 'eth_accounts' });
+
           if (accounts.length > 0) {
-            const chainId = await window.ethereum?.request({ method: 'eth_chainId' });
+            const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
+
             if (chainId === "0x7a69") {
-              const provider = new ethers.BrowserProvider(window.ethereum!);
+              const provider = new ethers.BrowserProvider(windowWithEthereum.ethereum!);
               setProvider(provider);
+
               const signer = await provider.getSigner();
               setSigner(signer);
+
               setAccount(accounts[0]);
+              // console.log
               // Initialize contract
               console.log("Address: " + CONTRACT_ADDRESS);
-              console.log("ENV: " + JSON.stringify(process.env, null, 2));
+              console.log("ENV: " + JSON.stringify(process.env));
+
               initializeContract(signer);
+
+              // Setup event listeners
             } else {
               setError("Please switch to Sepolia Testnet");
             }
           }
         } catch (error: any) {
           setError(error.message);
+          console.error(error);
         }
       }
     };
@@ -319,13 +327,14 @@ const FundDetail = () => {
         const network_html: any = document.querySelector("#network");
         const contract_html = document.querySelector("#contract");
         const account_html = document.querySelector("#addr");
-        network_html!.textContent = "Network name: " + networkName;
-        contract_html!.textContent = "Contract number: " + await contract?.getAddress()!;
+        console.log("Network name: " + networkName);
+        // console.log("dirname: " + __dirname);
+        contract_html!.textContent = "Contract number:" + await contract?.getAddress()!;
         account_html!.textContent = "Account: " + account;
       }
     };
     updateContractInfo();
-  }, [networkName, contract, account]);
+  }, [networkName]);
 
   const isMetaMaskInstalled = () => {
     return Boolean(window.ethereum && window.ethereum.isMetaMask);
@@ -333,7 +342,6 @@ const FundDetail = () => {
 
   const connectToMetaMask = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     e?.preventDefault();
-   const connectToMetaMask = async () => {
     if (!isMetaMaskInstalled()) {
       setError("MetaMask is not installed. Please install MetaMask to use this dApp.");
       return;
@@ -376,7 +384,7 @@ const FundDetail = () => {
     }
   };
 
-  async function switchToSepoliaNetwork() {
+    async function switchToSepoliaNetwork() {
     try {
       await window.ethereum?.request({
         method: 'wallet_switchEthereumChain',
@@ -390,14 +398,13 @@ const FundDetail = () => {
           await window.ethereum?.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x7a69',//Sepolia: 0xaa36a7 Local: 1337
+              chainId: '0x7a69', //Sepolia: 0xaa36a7 Local: 1337
               chainName: 'Localhost 8545', // Sepolia Testnet
-              nativeCurrency: { 
+              nativeCurrency: {
                 name: 'Sepolia ETH',
                 symbol: 'ETH',
                 decimals: 18
               },
-
               // Production url
               // rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`], // Replace with your Infura key
 
@@ -406,6 +413,8 @@ const FundDetail = () => {
               blockExplorerUrls: ['https://sepolia.etherscan.io']
             }]
           });
+
+
           return true;
         } catch (addError: any) {
           setError("Failed to add Sepolia network: " + addError.message);
@@ -427,26 +436,20 @@ const FundDetail = () => {
       throw new Error("Negative or zero amount");
     }
     return contract?.Donate(hashUUID(fundID), { value: amount })
-  }
-    return contract?.Donate(fundID, { value: amount });
   };
-
-  // ================================HANDLE SUBMIT==============================
-
+   // ================================HANDLE SUBMIT==============================
   function hashUUID(uuid: string): bigint{
     const hashed = ethers.keccak256(ethers.toUtf8Bytes(uuid));
     const bigNumber = BigInt(hashed.slice(0, 34));
     return bigNumber;
   }
 
-  const handleDonationSubmit = async (e?: React.MouseEvent<HTMLButtonElement>) => {
-    e?.preventDefault();
-   // ================================HANDLE SUBMIT==============================
 
-  const handleDonationSubmit = async (e: React.FormEvent) => {
+   const handleDonationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setDonationError(null);
     setDonationSuccess(null);
+
     const amount = parseFloat(donationAmount);
     if (isNaN(amount) || amount <= 0) {
       setDonationError("Please enter a valid donation amount.");
@@ -478,28 +481,10 @@ const FundDetail = () => {
       tx_val!.textContent = "Transaction value: " + transaction?.hash.substring(0, 32) + "...";
 
       (tx_val as HTMLAnchorElement)!.href = `https://sepolia.etherscan.io/tx/${transaction.hash}`
-    try {
-      const transaction = await donateToChain(await convertVNDToETH(amount));
-      const response = await fetch("/api/donate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fund_id: params.fund, amount }),
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Donation failed. Please try again.");
-      }
       setDonationSuccess("Donation successful!");
       setShowForm(false);
       setDonationAmount("");
       setSuccess("Transaction success");
-      const info = document.querySelector("#transaction-info");
-      info?.classList.remove("hidden");
-      const tx_val = document.querySelector("#transaction-status");
-      tx_val!.textContent = "Transaction value: " + transaction?.hash.substring(0, 10) + "...";
-      (tx_val as HTMLAnchorElement)!.href = `https://sepolia.etherscan.io/tx/${transaction.hash}`;
-      closeForm();
     } catch (error: any) {
       console.error("Donation error:", error.message);
       setError(error.message);
