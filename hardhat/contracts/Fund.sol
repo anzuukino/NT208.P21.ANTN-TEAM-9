@@ -19,6 +19,7 @@ contract FundManager{
     uint no_phase;
     Status status;
     uint256[] current_value;
+    bool[] withdrawed;
     uint current_phase;
     bool extended;
     uint deadline_poc;
@@ -59,10 +60,10 @@ contract FundManager{
     if(current_fund.end_of_phase[current_phase_] < block.timestamp && 
       current_fund.current_value[current_phase_] < current_fund.phase_goal[current_phase_]){
         current_fund.status = Status.STOPPED;
-        console.log("set STOPPED");
+        ////console.log("set STOPPED");
       }
 
-    while(current_phase_ < no_phase_ -1 && current_fund.current_value[current_phase_] > current_fund.phase_goal[current_phase_]){
+    while(current_phase_ < no_phase_-1 && current_fund.current_value[current_phase_] > current_fund.phase_goal[current_phase_]){
         uint spare = current_fund.current_value[current_phase_] - current_fund.phase_goal[current_phase_];
         current_fund.current_value[current_phase_] -= spare;
         current_fund.current_value[current_phase_+1] += spare;
@@ -72,20 +73,30 @@ contract FundManager{
     }
 
     for(uint i=0;i<no_phase_;i++){
-      // console.log("%d ", current_fund.current_value[i]);
+      // //console.log("%d ", current_fund.current_value[i]);
     }
-    
+    // print phase goals
+    for(uint i=0;i<no_phase_;i++){
+      //console.log("Phase goal[%d] %d: ",i ,current_fund.phase_goal[i]);
+    }
+    //print current value
+    for(uint i=0;i<no_phase_;i++){
+      //console.log("Phase value[%d] %d: ",i, current_fund.current_value[i]);
+    }
     if(current_fund.current_value[no_phase_-1] >= current_fund.phase_goal[no_phase_-1] && current_fund.status != Status.STOPPED){
         current_fund.status = Status.FINISHED;
-        console.log("set FINISHED");
+        current_fund.current_phase++;
+        //console.log("Current phase %d", current_fund.current_phase);
+        //console.log("set FINISHED");
       }
   }
 
   function AddFund(uint fid, uint[] memory end_of_phase_, uint[] memory phase_goal_) public {
     uint[] memory initialValues = new uint[](phase_goal_.length);
-  
+    bool[] memory init_withdraw = new bool[](phase_goal_.length);
     for(uint i = 0; i < phase_goal_.length; i++) {
       initialValues[i] = 0;
+      init_withdraw[i] = false;
     }
 
     fund_t memory new_fund = fund_t({
@@ -100,7 +111,8 @@ contract FundManager{
       current_phase: 0,
       extended: false,
       deadline_poc: 0,
-      banned: false
+      banned: false,
+      withdrawed: init_withdraw
     });
     funds[fid] = new_fund;
     no_funds++;
@@ -112,7 +124,7 @@ contract FundManager{
   function Donate(uint fid) payable public {
     UpdateProgress(fid);
     require(fundExist[fid], "Fund must be exist");
-    console.log("Status %d",uint(funds[fid].status));
+    // //console.log("Status %d",uint(funds[fid].status));
     require(funds[fid].status == Status.DOING, "This fund is no longer accepting donate");   
     require(msg.value > 0, "Donation value must be positive");
     fund_t storage current_fund = funds[fid];
@@ -132,10 +144,16 @@ contract FundManager{
 
   function Withdraw(uint fid, uint phase) public {
     require(fundExist[fid], "Fund does not exist");
+    require(funds[fid].owner == msg.sender, "You are not the owner of this fund");
     fund_t storage current_fund = funds[fid];
     require(current_fund.no_phase > phase, "Invalid phase");
+    //console.log("Current phase %d", current_fund.current_phase);
+    //console.log(current_fund.current_phase > phase ? "Current value is enough" : "Current value is not enough");
     require(current_fund.current_phase > phase, "The phase is not finished");
     require(current_fund.status != Status.STOPPED, "The fund is stopped and no longer working");
+    console.log("Contract balance:", address(this).balance);
+    console.log("Sending to:", current_fund.owner);
+    console.log("Amount:", current_fund.current_value[phase]);
     (bool success, ) = current_fund.owner.call{value: current_fund.current_value[phase]}("");
     require(success, "Transfer failed");
     emit WithdrawSucess(fid, phase, current_fund.owner, block.timestamp);

@@ -24,6 +24,20 @@ import type {
 } from "./common";
 
 export declare namespace FundManager {
+  export type DonorEntryStruct = {
+    donor: AddressLike;
+    amount: BigNumberish;
+    phase: BigNumberish;
+    timestamp: BigNumberish;
+  };
+
+  export type DonorEntryStructOutput = [
+    donor: string,
+    amount: bigint,
+    phase: bigint,
+    timestamp: bigint
+  ] & { donor: string; amount: bigint; phase: bigint; timestamp: bigint };
+
   export type Fund_tStruct = {
     fID: BigNumberish;
     owner: AddressLike;
@@ -33,6 +47,7 @@ export declare namespace FundManager {
     no_phase: BigNumberish;
     status: BigNumberish;
     current_value: BigNumberish[];
+    withdrawed: boolean[];
     current_phase: BigNumberish;
     extended: boolean;
     deadline_poc: BigNumberish;
@@ -48,6 +63,7 @@ export declare namespace FundManager {
     no_phase: bigint,
     status: bigint,
     current_value: bigint[],
+    withdrawed: boolean[],
     current_phase: bigint,
     extended: boolean,
     deadline_poc: bigint,
@@ -61,23 +77,12 @@ export declare namespace FundManager {
     no_phase: bigint;
     status: bigint;
     current_value: bigint[];
+    withdrawed: boolean[];
     current_phase: bigint;
     extended: boolean;
     deadline_poc: bigint;
     banned: boolean;
   };
-
-  export type DonorEntryStruct = {
-    donor: AddressLike;
-    amount: BigNumberish;
-    phase: BigNumberish;
-  };
-
-  export type DonorEntryStructOutput = [
-    donor: string,
-    amount: bigint,
-    phase: bigint
-  ] & { donor: string; amount: bigint; phase: bigint };
 }
 
 export interface FundManagerInterface extends Interface {
@@ -87,10 +92,10 @@ export interface FundManagerInterface extends Interface {
       | "Donate"
       | "ExtendDay"
       | "GetCurrentFundMoney"
+      | "GetDonor"
       | "GetFund"
       | "GetPlan"
       | "GetState"
-      | "GetSubmitter"
       | "Refund"
       | "Withdraw"
       | "donors"
@@ -126,6 +131,10 @@ export interface FundManagerInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "GetDonor",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "GetFund",
     values: [BigNumberish]
   ): string;
@@ -135,10 +144,6 @@ export interface FundManagerInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "GetState",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "GetSubmitter",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -171,13 +176,10 @@ export interface FundManagerInterface extends Interface {
     functionFragment: "GetCurrentFundMoney",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "GetDonor", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "GetFund", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "GetPlan", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "GetState", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "GetSubmitter",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "Refund", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "Withdraw", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "donors", data: BytesLike): Result;
@@ -368,6 +370,12 @@ export interface FundManager extends BaseContract {
     "view"
   >;
 
+  GetDonor: TypedContractMethod<
+    [fid: BigNumberish],
+    [FundManager.DonorEntryStructOutput[]],
+    "view"
+  >;
+
   GetFund: TypedContractMethod<
     [fid: BigNumberish],
     [FundManager.Fund_tStructOutput],
@@ -377,12 +385,6 @@ export interface FundManager extends BaseContract {
   GetPlan: TypedContractMethod<[fid: BigNumberish], [bigint[]], "view">;
 
   GetState: TypedContractMethod<[fid: BigNumberish], [bigint], "view">;
-
-  GetSubmitter: TypedContractMethod<
-    [fid: BigNumberish],
-    [FundManager.DonorEntryStructOutput[]],
-    "view"
-  >;
 
   Refund: TypedContractMethod<
     [fid: BigNumberish, phase: BigNumberish],
@@ -399,10 +401,11 @@ export interface FundManager extends BaseContract {
   donors: TypedContractMethod<
     [arg0: BigNumberish, arg1: BigNumberish],
     [
-      [string, bigint, bigint] & {
+      [string, bigint, bigint, bigint] & {
         donor: string;
         amount: bigint;
         phase: bigint;
+        timestamp: bigint;
       }
     ],
     "view"
@@ -497,6 +500,13 @@ export interface FundManager extends BaseContract {
     nameOrSignature: "GetCurrentFundMoney"
   ): TypedContractMethod<[fid: BigNumberish], [[bigint, bigint]], "view">;
   getFunction(
+    nameOrSignature: "GetDonor"
+  ): TypedContractMethod<
+    [fid: BigNumberish],
+    [FundManager.DonorEntryStructOutput[]],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "GetFund"
   ): TypedContractMethod<
     [fid: BigNumberish],
@@ -509,13 +519,6 @@ export interface FundManager extends BaseContract {
   getFunction(
     nameOrSignature: "GetState"
   ): TypedContractMethod<[fid: BigNumberish], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "GetSubmitter"
-  ): TypedContractMethod<
-    [fid: BigNumberish],
-    [FundManager.DonorEntryStructOutput[]],
-    "view"
-  >;
   getFunction(
     nameOrSignature: "Refund"
   ): TypedContractMethod<
@@ -535,10 +538,11 @@ export interface FundManager extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish, arg1: BigNumberish],
     [
-      [string, bigint, bigint] & {
+      [string, bigint, bigint, bigint] & {
         donor: string;
         amount: bigint;
         phase: bigint;
+        timestamp: bigint;
       }
     ],
     "view"

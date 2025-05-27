@@ -354,13 +354,13 @@ function PostWriter() {
     router.push(`?step=${step > 0 ? step - 1 : 0}`);
   };
 
-  function convertDonations(donations: DonationDate[]): { dates: number[]; amounts: number[] } {
+  async function convertDonations(donations: DonationDate[]): Promise<{ dates: number[]; amounts: bigint[] }> {
     const dates: number[] = [];
-    const amounts: number[] = [];
+    const amounts: bigint[] = [];
 
     for (const donation of donations) {
       dates.push(new Date(donation.date).getTime()); // convert to timestamp (ms)
-      amounts.push(donation.amount);
+      amounts.push( await convertVNDToETH(donation.amount));
     }
 
     return { dates, amounts };
@@ -370,6 +370,51 @@ function PostWriter() {
     const hashed = ethers.keccak256(ethers.toUtf8Bytes(uuid));
     const bigNumber = BigInt(hashed.slice(0, 34));
     return bigNumber;
+  }
+
+
+  // ======================= CURRENCY CONVERTER ==================
+
+  async function convertVNDToETH(vndAmount: number): Promise<bigint> {
+    const url = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eth.json';
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
+      const data = await res.json();
+      const vndPerEth = data.eth.vnd as number;
+
+      if (!vndPerEth) throw new Error("VND rate not found in response");
+
+      const ethAmount =   BigInt(vndAmount) * BigInt(1e18 * 10**5) / BigInt(Math.floor(vndPerEth * 10**5));
+      return BigInt(ethAmount) ;
+    } catch (error) {
+      console.error("Currency conversion error:", error);
+      throw error;
+    }
+  }
+
+  async function convertETHToVND(ethAmount: bigint): Promise<number> {
+    const url = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eth.json';
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
+      const data = await res.json();
+      const vndPerEth = data.eth.vnd as number;
+
+      if (!vndPerEth) throw new Error("VND rate not found in response");
+
+      // Convert `wei` to `ETH` using fixed-point division
+      const vndAmount = (ethAmount * BigInt(Math.floor(vndPerEth * 10**5))) / BigInt(1e18 * 10**5);
+
+      return Number(vndAmount); // Convert back to JS number
+    } catch (error) {
+      console.error("Currency conversion error:", error);
+      throw error;
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -415,7 +460,7 @@ function PostWriter() {
       if (fundID) {
         debugger;
         console.log("Fund ID:", fundID);
-        const { dates, amounts } = convertDonations(selectedDates);
+        const { dates, amounts } = await convertDonations(selectedDates);
         const transaction = await contract?.AddFund(hashUUID(fundID), dates, amounts);
         const receipt = await transaction?.wait();
         console.log("Transaction receipt:", receipt);

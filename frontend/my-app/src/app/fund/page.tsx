@@ -21,6 +21,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import FundManagerArtifact from '../artifacts/contracts/Fund.sol/FundManager.json' with {type: 'json'};
+import FundProgressComponent from "@/components/FundProgress";
 
 require('dotenv').config({ path: '../../../.env' });
 
@@ -123,6 +124,32 @@ const FundDetail = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const formRef = useRef<HTMLDivElement>(null);
 
+  interface DonorEntry {
+    donor: string;
+    amount: string | number;
+    phase: string | number;
+    timestamp: string | number;
+  }
+
+  interface FormattedDonor {
+    id: number;
+    address: string;
+    name: string;
+    amount: string | number;
+    date: string;
+    timestamp: string | number;
+  }
+
+  interface Contract {
+    GetDonor: (fid: string | number) => Promise<DonorEntry[]>;
+    GetHash?: (fundID: string | number) => Promise<string | number>;
+  }
+
+  interface DonorTableProps {
+    contract: Contract | null;
+    fundID: string | number;
+  }
+  
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -204,8 +231,6 @@ const FundDetail = () => {
       }
     };
     checkOwner();
-    // setFund(newFund);
-    // setFundID(newFund.fundID);
   }, []);
 
   useEffect(() => {
@@ -427,6 +452,88 @@ const FundDetail = () => {
     }
   }
 
+  const onWithdrawClick = async () => {
+    // Get phase value from the input field
+    const phaseInput = document.getElementById('phase-input') as HTMLInputElement | null;
+    const phase = parseInt(phaseInput?.value || '0');
+    
+    // Get fundID from your component state/props
+    
+    // Validate phase input
+    if (isNaN(phase) || phase < 0) {
+      alert('Please enter a valid phase number (0 or greater)');
+      return;
+    }
+    
+    try {
+      await handleWithdraw(fundID, phase);
+    } catch (error) {
+      // Error handling is done in handleWithdraw
+    }
+  };
+
+  async function handleWithdraw(fundID: string, phase: number) {
+    try {
+      // Validate inputs
+      if (!fundID || phase === undefined || phase === null) {
+        throw new Error('Fund ID and phase are required');
+      }
+
+      // Convert fundID to fid using hashUUID function
+      const fid = hashUUID(fundID);
+    
+
+      // Estimate gas for the transaction
+    const provider = new ethers.BrowserProvider(window.ethereum!);
+    const signer = await provider.getSigner();
+    const accounts = await provider.listAccounts();
+    
+    if (accounts.length === 0) {
+      throw new Error('No wallet connected. Please connect your wallet first.');
+    }
+
+    // Estimate gas for the transaction
+    const gasEstimate = await contract?.Withdraw.estimateGas(fid, phase);
+
+    // Call the Withdraw function
+    const transaction = await contract?.Withdraw(fid, phase, {
+      gasLimit: Math.floor(Number(gasEstimate) * 1.2), // Add 20% buffer for gas
+    });
+
+      console.log('Withdrawal successful:', transaction);
+      
+      // Show success message
+      alert(`Withdrawal successful! Transaction hash: ${transaction.transactionHash}`);
+      
+      return transaction;
+
+    } catch (error : any) {
+      console.error('Withdrawal failed:', error);
+      
+      // Handle specific contract error cases
+      let errorMessage = 'Withdrawal failed: ';
+      
+      if (error.message.includes('Fund does not exist')) {
+        errorMessage += 'Fund does not exist';
+      } else if (error.message.includes('Invalid phase')) {
+        errorMessage += 'Invalid phase number';
+      } else if (error.message.includes('The phase is not finished')) {
+        errorMessage += 'The phase is not finished yet';
+      } else if (error.message.includes('The fund is stopped and no longer working')) {
+        errorMessage += 'The fund is stopped and no longer working';
+      } else if (error.message.includes('Transfer failed')) {
+        errorMessage += 'Transfer failed';
+      } else if (error.message.includes('User denied transaction signature')) {
+        errorMessage += 'Transaction was cancelled by user';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+      throw error;
+    }
+  }
+
     // IMPORTANT
   // amount must be in wei 
   // Must be convert from VND to wei
@@ -445,7 +552,7 @@ const FundDetail = () => {
   }
 
 
-   const handleDonationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+   const handleDonationSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setDonationError(null);
     setDonationSuccess(null);
@@ -485,6 +592,7 @@ const FundDetail = () => {
       setShowForm(false);
       setDonationAmount("");
       setSuccess("Transaction success");
+      closeForm();
     } catch (error: any) {
       console.error("Donation error:", error.message);
       setError(error.message);
@@ -511,33 +619,37 @@ const FundDetail = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+
+
   interface donor_t{
     id: number;
-    address: string;
+    donor: string;
     name: string;
     amount: string | number;
     date: string;
     timestamp: string | number;
   }
+
   const fetchDonors = async () => {
     if (!contract || !fundID) return;
     
-    setLoading(true);
     setError('');
     
     try {
+      console.log(fundID);
       const fid = await hashUUID(fundID);
+      console.log(fid);
       const donorList = await contract.GetDonor(fid);
       
       // Transform the data to a more usable format
       const formattedDonors = donorList.map((donor: donor_t, index: number) => ({
         id: index,
-        address: donor.address,
+        address: donor.donor,
         amount: donor.amount,
         timestamp: donor.timestamp,
         date: new Date(Number(donor.timestamp) * 1000).toLocaleDateString()
       }));
-      
+      formattedDonors.map((donor: donor_t) => {console.log(`Donor: ${donor.donor}`, donor)}); 
       setDonors(formattedDonors);
     } catch (err : any) {
       console.error('Error fetching donors:', err);
@@ -628,15 +740,8 @@ const FundDetail = () => {
           <div className="text-lg py-4 sm:text-2xl">
             <div>{`Project description: ${fund?.description}`}</div>
           </div>
-          <div className="w-full bg-gray-300 h-2 rounded mt-2 my-6">
-            <div
-              className="bg-green-500 h-2 rounded"
-              style={{
-                width: `${fund?.current_money! / fund?.target_money! < 1
-                  ? (fund?.current_money! / fund?.target_money!) * 100
-                  : 100}%`,
-              }}
-            ></div>
+          <div className="w-full rounded mt-2 my-6">
+            <FundProgressComponent fundId={hashUUID(fundID)}></FundProgressComponent>
           </div>
           <div className="flex flex-wrap justify-start gap-4">
             <button
@@ -648,18 +753,31 @@ const FundDetail = () => {
             </button>
             {isOwner && (
               <div className="flex gap-4">
+              <label htmlFor="phase-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Phase Number
+              </label>
+              <input 
+                type="number" 
+                id="phase-input" 
+                aria-describedby="helper-text-explanation" 
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" 
+                placeholder="0" 
+                min="0"
+                required 
+              />
+                <button
+                  type="button"
+                  className=" text-white bg-red-400 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-xl px-5 py-2.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 shadow-md"
+                  onClick={onWithdrawClick}
+                >
+                  Withdraw
+                </button>
                 <button
                   type="button"
                   className="text-white bg-blue-500 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-xl px-5 py-2.5 text-center me-2 mb-2 shadow-md"
                   onClick={openEditForm}
                 >
                   Edit
-                </button>
-                <button
-                  type="button"
-                  className="text-white bg-red-400 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-xl px-5 py-2.5 text-center me-2 mb-2 shadow-md"
-                >
-                  Withdraw
                 </button>
               </div>
             )}
@@ -711,58 +829,45 @@ const FundDetail = () => {
                 </thead>
                 <tbody>
                   {loading ? (
-          <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-            <td colSpan={5} className="px-6 py-4 text-center">
-              Loading donors...
-            </td>
-          </tr>
-        ) : donors.length === 0 ? (
-          <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-            <td colSpan={5} className="px-6 py-4 text-center">
-              No donors found for this fund.
-            </td>
-          </tr>
-        ) : (
-          donors.map((donor : donor_t) => (
-            <tr key={donor.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-              <th
-                scope="row"
-                className="px-6 py-4 font-medium w-[30%] text-gray-900 whitespace-nowrap dark:text-white"
-                title={donor.address}
-              >
-                {truncateAddress(donor.address)}
-              </th>
-              <td className="px-6 py-4">{donor.name}</td>
-              <td className="px-6 py-4">{formatAmount(donor.amount)}</td>
-              <td className="px-6 py-4">{donor.date}</td>
-              <td className="px-6 py-4 text-right">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigator.clipboard.writeText(donor.address);
-                  }}
-                  className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                >
-                  Copy Address
-                </a>
-              </td>
-            </tr>
-          ))
-        )}
-                  <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                    <th scope="row" className="px-6 py-4 font-medium w-[30%] text-gray-900 whitespace-nowrap dark:text-white">
-                      Apple MacBook Pro 17"
-                    </th>
-                    <td className="px-6 py-4">Silver</td>
-                    <td className="px-6 py-4">Laptop</td>
-                    <td className="px-6 py-4">$2999</td>
-                    <td className="px-6 py-4 text-right">
-                      <a href="#" className="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                        See bills
-                      </a>
-                    </td>
-                  </tr>
+                    <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+                      <td colSpan={5} className="px-6 py-4 text-center">
+                        Loading donors...
+                      </td>
+                    </tr>
+                  ) : donors.length === 0 ? (
+                    <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+                      <td colSpan={5} className="px-6 py-4 text-center">
+                        No donors found for this fund.
+                      </td>
+                    </tr>
+                  ) : (
+                    donors.map((donor : FormattedDonor) => (
+                      <tr key={donor.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
+                        <th
+                          scope="row"
+                          className="px-6 py-4 font-medium w-[30%] text-gray-900 whitespace-nowrap dark:text-white"
+                          title={donor.address}
+                        >
+                          {truncateAddress(donor.address)}
+                        </th>
+                        <td className="px-6 py-4">{donor.name}</td>
+                        <td className="px-6 py-4">{formatAmount(donor.amount)}</td>
+                        <td className="px-6 py-4">{donor.date}</td>
+                        <td className="px-6 py-4 text-right">
+                          <a
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigator.clipboard.writeText(donor.address);
+                            }}
+                            className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                          >
+                            Copy Address
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -771,9 +876,16 @@ const FundDetail = () => {
       </div>
         {/* ============================ MODAL============================= */}
       <div className="donate-fund hidden" id="donate-fund">
-        <div className="fixed top-0 left-0 w-screen h-screen flex items-center justify-center bg-black/50 backdrop-blur-sm transform transition-transform duration-300">
-          <div className="bg-white shadow-xl shadow-black rounded-xl w-11/12 md:w-2/5 p-6">
-            <form className="flex flex-col gap-2" onSubmit={handleDonationSubmit}>
+        <div
+          className={`fixed top-0 left-0 w-screen h-screen flex
+    items-center justify-center bg-black/50 backdrop-blur-sm
+    transform transition-transform duration-300 `}
+        >
+          <div
+            className="bg-white shadow-xl shadow-black
+        rounded-xl w-11/12 md:w-2/5  p-6"
+          >
+            <form className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-2xl">Donate</h3>
                 <button
@@ -830,7 +942,11 @@ const FundDetail = () => {
                 </div>
               </div>
               <button
-                className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium text-lg leading-tight rounded-full shadow-md hover:bg-green-700 mt-5"
+                className="inline-block px-6 py-2.5 bg-green-600
+            text-white font-medium text-lg leading-tight
+            rounded-full shadow-md hover:bg-green-700 mt-5"
+                onClick={handleDonationSubmit}
+                disabled={!isConnected || !donationAmount || isNaN(Number(donationAmount))}
               >
                 DONATE
               </button>
