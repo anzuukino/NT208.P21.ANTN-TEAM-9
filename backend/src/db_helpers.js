@@ -640,6 +640,24 @@ async function updateFund(fundID, updates) {
     }
 }
 
+async function filterbyCategory(category) {
+    try {
+        return await Fund.findAll({
+            where: { category },
+            order: [["created_at", "DESC"]],
+            include: [
+                {
+                    model: FundAttachment,
+                    attributes: ["type", "path"]
+                }
+            ]
+        });
+    } catch (error) {
+        console.error("Error filtering funds by category:", error);
+        return [];
+    }
+}
+
 module.exports = {
     getUserByIDprivate,
     getUserByIDpublic,
@@ -658,5 +676,6 @@ module.exports = {
     UpdateUser,
     createProfileImage,
     saveDonationPlan,
-    updateFund
+    updateFund,
+    filterbyCategory
 };

@@ -1,13 +1,13 @@
-# Base on offical NGINX Alpine image
 FROM nginx:alpine
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
+# Remove any existing config files
+RUN rm /etc/nginx/conf.d/*
 
-COPY certs/fullchain.pem /etc/nginx/certs/fullchain.pem
-COPY certs/privkey.pem /etc/nginx/certs/privkey.pem
-# Expose the listening port
+# Copy config files
+# *.conf files in conf.d/ dir get included in main config
+COPY ./default.conf /etc/nginx/conf.d/
+COPY ./nginx_dev.conf /etc/nginx/nginx.conf
+
 EXPOSE 80
-EXPOSE 8443
 
-# # Launch NGINX
-# CMD [ "nginx", "-g", "daemon off;" ]
+CMD [ "nginx", "-g", "daemon off;" ]

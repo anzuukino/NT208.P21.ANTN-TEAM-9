@@ -19,7 +19,8 @@ const {
     UpdateUser,
     createProfileImage,
     saveDonationPlan ,
-    updateFund
+    updateFund,
+    filterbyCategory
 } = require("./db_helpers");
 const auth = require("./middleware/auth");
 const { GoogleClientID, GoogleClientSecret } = require("./config");
@@ -468,6 +469,20 @@ router.post("/api/update-fund", auth, async (req, res) => {
         return res.status(200).json({ message: "Fund updated successfully"});
     } catch (error) {
         console.error("Error updating fund:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.post("/api/filter-category", async (req, res) => {
+    const { category } = req.body;
+    if (!category) {
+        return res.status(400).json({ error: "Category is required" });
+    }
+    try {
+        const funds = await filterbyCategory(category);
+        return res.status(200).json(funds);
+    } catch (error) {
+        console.error("Error filtering funds by category:", error);
         return res.status(500).json({ error: "Internal Server Error" });
     }
 });
