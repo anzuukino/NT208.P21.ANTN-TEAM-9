@@ -196,29 +196,6 @@ export default function LoginForm() {
             />
             {loadingGoogle ? "Loading..." : "Continue with Google"}
           </button>
-          <button
-            className="flex items-center justify-center w-full py-3 border border-gray-400 rounded-lg hover:bg-gray-200 text-lg font-semibold text-gray-900"
-            onClick={OauthClickGoogle}
-            disabled={loadingGoogle}
-          >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/124/124010.png"
-              alt="Facebook"
-              className="w-6 h-6 mr-3"
-            />
-            {loading ? "Loading..." : "Continue with Google"}
-          </button>
-          <button
-            className="flex items-center justify-center w-full py-3 border border-gray-400 rounded-lg hover:bg-gray-200 text-lg font-semibold text-gray-900"
-            onClick={OauthClickGoogle}
-          >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/731/731985.png"
-              alt="Apple"
-              className="w-6 h-6 mr-3"
-            />
-            Continue with Apple
-          </button>
         </div>
       </div>
     </div>
