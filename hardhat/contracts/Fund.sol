@@ -151,9 +151,9 @@ contract FundManager{
     //console.log(current_fund.current_phase > phase ? "Current value is enough" : "Current value is not enough");
     require(current_fund.current_phase > phase, "The phase is not finished");
     require(current_fund.status != Status.STOPPED, "The fund is stopped and no longer working");
-    console.log("Contract balance:", address(this).balance);
-    console.log("Sending to:", current_fund.owner);
-    console.log("Amount:", current_fund.current_value[phase]);
+    // console.log("Contract balance:", address(this).balance);
+    // console.log("Sending to:", current_fund.owner);
+    // console.log("Amount:", current_fund.current_value[phase]);
     (bool success, ) = current_fund.owner.call{value: current_fund.current_value[phase]}("");
     require(success, "Transfer failed");
     emit WithdrawSucess(fid, phase, current_fund.owner, block.timestamp);

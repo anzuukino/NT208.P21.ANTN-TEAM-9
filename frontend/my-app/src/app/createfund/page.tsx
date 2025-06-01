@@ -139,7 +139,7 @@ function PostWriter() {
           }
           const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
 
-          if (chainId === "0x7a69") {
+          if (chainId === "0xaa36a7") {
             const provider = new ethers.BrowserProvider(windowWithEthereum.ethereum!);
             setProvider(provider);
 
@@ -149,8 +149,8 @@ function PostWriter() {
             setAccount(accounts[0]);
             // console.log
             // Initialize contract
-            console.log("Address: " + CONTRACT_ADDRESS);
-            console.log("ENV: " + JSON.stringify(process.env, null, 2));
+            // console.log("Address: " + CONTRACT_ADDRESS);
+            // console.log("ENV: " + JSON.stringify(process.env, null, 2));
             initializeContract(signer);
 
             // Setup event listeners
@@ -202,7 +202,7 @@ function PostWriter() {
 
       // Check if we're on Sepolia (chainId 11155111 or 0xaa36a7)
       const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
-      if (chainId !== '0x7a69') {
+      if (chainId !== '0xaa36a7') {
         showError("Please switch to Sepolia Testnet");
         await switchToSepoliaNetwork();
         return;
@@ -234,7 +234,7 @@ function PostWriter() {
     try {
       await window.ethereum?.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x7a69' }], // Sepolia chainId
+        params: [{ chainId: '0xaa36a7' }], // Sepolia chainId
       });
       return true;
     } catch (error: any) {
@@ -244,8 +244,8 @@ function PostWriter() {
           await window.ethereum?.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x7a69', //Sepolia: 0xaa36a7 Local: 1337
-              chainName: 'Localhost 8545', // Sepolia Testnet
+              chainId: '0xaa36a7', //Sepolia: 0xaa36a7 Local: 1337
+              chainName: 'Sepolia Testnet', // Sepolia Testnet
               nativeCurrency: {
                 name: 'Sepolia ETH',
                 symbol: 'ETH',
@@ -255,7 +255,7 @@ function PostWriter() {
               // rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`], // Replace with your Infura key
 
               // Development url
-              rpcUrls: ["http://localhost:8545"],
+              rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`],
               blockExplorerUrls: ['https://sepolia.etherscan.io']
             }]
           });

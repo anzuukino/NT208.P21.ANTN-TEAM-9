@@ -315,7 +315,7 @@ const FundDetail = () => {
           if (accounts.length > 0) {
             const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
 
-            if (chainId === "0x7a69") {
+            if (chainId === "0xaa36a7") {
               const provider = new ethers.BrowserProvider(windowWithEthereum.ethereum!);
               setProvider(provider);
 
@@ -390,7 +390,7 @@ const FundDetail = () => {
 
       // Check if we're on Sepolia (chainId 11155111 or 0xaa36a7)
       const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
-      if (chainId !== '0x7a69') {
+      if (chainId !== '0xaa36a7') {
         setError("Please switch to Sepolia Testnet");
         await switchToSepoliaNetwork();
         return;
@@ -413,7 +413,7 @@ const FundDetail = () => {
     try {
       await window.ethereum?.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x7a69' }], // Sepolia chainId
+        params: [{ chainId: '0xaa36a7' }], // Sepolia chainId
       });
       return true;
     } catch (error: any) {
@@ -423,8 +423,8 @@ const FundDetail = () => {
           await window.ethereum?.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: '0x7a69', //Sepolia: 0xaa36a7 Local: 1337
-              chainName: 'Localhost 8545', // Sepolia Testnet
+              chainId: '0xaa36a7', //Sepolia: 0xaa36a7 Local: 1337
+              chainName: 'Sepolia Testnet', // Sepolia Testnet
               nativeCurrency: {
                 name: 'Sepolia ETH',
                 symbol: 'ETH',
@@ -434,7 +434,7 @@ const FundDetail = () => {
               // rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`], // Replace with your Infura key
 
               // Development url
-              rpcUrls: ["http://localhost:8545"],
+              rpcUrls: [`https://sepolia.infura.io/v3/${INFURA_API_KEY}`],
               blockExplorerUrls: ['https://sepolia.etherscan.io']
             }]
           });
