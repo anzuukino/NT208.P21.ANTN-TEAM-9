@@ -75,28 +75,31 @@ NT208.P21.ANTN-TEAM-9/
 
 ## Technologies Used
 
-### Frontend:
-- **Next.js (App Router)**
-- **React 19**
-- **TailwindCSS**
-- **Framer Motion**
-- **TypeScript**
+### Frontend
+- **Next.js (App Router)** – Modern React framework for SSR/SSG
+- **React 19** – Component-based UI
+- **TailwindCSS** – Utility-first CSS framework
+- **Framer Motion** – Animations and transitions
+- **TypeScript** – Type safety for JavaScript
 
-### Backend:
-- **Node.js & Express.js**
-- **PostgreSQL & Sequelize ORM**
-- **JWT Authentication**
-- **Middleware & Router structure**
+### Backend
+- **Node.js & Express.js** – RESTful API server
+- **JWT Authentication** – Secure user sessions
+- **Middleware & Router structure** – Modular backend code
 
-### Proxy:
-- **Nginx** (Reverse proxy for handling requests)
+### Database
+- **PostgreSQL** – Relational database
+- **Sequelize ORM** – Database interaction
 
-### Database:
-- **PostgreSQL** (Relational database)
-- **Sequelize** (ORM for database interaction)
+### Smart Contracts
+- **Solidity** – Smart contract language
+- **Hardhat** – Ethereum development environment
 
-### Deployment:
-- **Docker & Docker Compose**
+### Proxy
+- **Nginx** – Reverse proxy for handling requests
+
+### Deployment
+- **Docker & Docker Compose** – Containerized, multi-service orchestration
 
 ## Setup and Installation
 
