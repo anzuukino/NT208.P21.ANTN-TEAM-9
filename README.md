@@ -1,42 +1,76 @@
 # Project Overview
 
-This project consists of a full-stack web application with a **Next.js frontend**, an **Express.js backend**, and a **PostgreSQL database**, all orchestrated via **Docker and Nginx**.
+**OnlyFund** is a full-stack crowdfunding platform that enables users to create, manage, and donate to fundraising campaigns. The application features:
+
+- **User authentication** (including Google OAuth)
+- **Fund creation and management** (with image uploads and category filtering)
+- **Donation tracking and withdrawal management**
+- **User profile management** (including profile image upload)
+- **Smart contract integration** for transparency and security (using Hardhat and Solidity)
+- **Modern UI/UX** built with Next.js, React, and TailwindCSS
+- **Robust backend** with Express.js and PostgreSQL, using Sequelize ORM
+- **Containerized deployment** with Docker and Nginx for scalable, production-ready hosting
+
+The project is organized into separate services for the frontend, backend, smart contract development, and database, all orchestrated via Docker Compose for easy setup and deployment.
+
+## Group & Project Information
+
+- **Group:** 8
+- **Members:**
+  - Ngô Phúc Dương - 23520350
+  - Nguyễn Thị Trúc Ly - 23520908
+  - Nguyễn Thành An - 23520019
+- **TikTok:** [Link video](https://www.tiktok.com/@violet_8201/video/7519035341513231637)
 
 ## Directory Structure
 
 ```
-.
-├── backend             # Express.js backend
+NT208.P21.ANTN-TEAM-9/
+├── backend/                # Express.js backend
 │   ├── Dockerfile
-│   ├── src
-│   │   ├── config.js
-│   │   ├── db_helpers.js
-│   │   ├── index.js
-│   │   ├── jwt_helpers.js
-│   │   ├── middleware/
-│   │   ├── router.js
-│   │   ├── package.json
-│   │   ├── package-lock.json
-│   │   └── uploads/
-├── frontend            # Next.js frontend
+│   └── src/
+│       ├── config.js
+│       ├── db_helpers.js
+│       ├── index.js
+│       ├── jwt_helpers.js
+│       ├── middleware/
+│       │   └── auth.js
+│       ├── router.js
+│       ├── package.json
+│       ├── package-lock.json
+│       └── uploads/
+├── docker-compose.yml      # Docker container orchestration
+├── frontend/               # Next.js frontend
 │   ├── Dockerfile
-│   ├── my-app/
-│   │   ├── package.json
-│   │   ├── package-lock.json
-│   │   ├── public/
-│   │   ├── src/
-│   │   ├── tailwind.config.js
-│   │   ├── tsconfig.json
-│   │   └── next.config.ts
-├── nginx               # Reverse proxy
+│   ├── index.html
+│   └── my-app/
+│       ├── assets/
+│       ├── contracts/
+│       ├── public/
+│       ├── src/
+│       │   ├── app/
+│       │   ├── components/
+│       │   └── ...
+│       ├── tailwind.config.js
+│       ├── tsconfig.json
+│       └── ...
+├── hardhat/                # Smart contract development
+│   ├── artifacts/
+│   ├── contracts/
+│   ├── scripts/
+│   ├── test/
+│   ├── typechain-types/
+│   ├── hardhat.config.ts
+│   └── ...
+├── nginx/                  # Nginx reverse proxy
 │   ├── Dockerfile
 │   ├── default.conf
-│   └── nginx.conf
-├── postgresql          # Database setup
+│   ├── nginx.conf
+│   └── ...
+├── postgresql/             # PostgreSQL database setup
 │   ├── Dockerfile
 │   └── init.sql
-├── docker-compose.yml  # Docker container orchestration
-└── README.md           # Project documentation
+└── README.md               # Project documentation
 ```
 
 ## Technologies Used
@@ -86,10 +120,38 @@ Ensure you have the following installed:
    - Admin credentials: `admin@example.com` / `testpassword`
 
 ## API Endpoints (Backend)
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/profile` - Fetch user profile
-- `POST /api/donate` - Make a donation
+
+### Authentication & User
+- `POST /api/login` - User login
+- `POST /api/register` - User registration
+- `POST /api/logout` - User logout (clears cookie)
+- `GET /api/auth/google` - Google OAuth callback
+- `POST /api/oauth` - Get Google OAuth URL
+- `GET /api/profile` - Fetch user profile (deprecated, see `/api/user/auth/:uid`)
+- `GET /api/user/:uid` - Public user info by user ID
+- `GET /api/user/auth/:uid` - Private user info (auth required, only self)
+- `GET /api/user` - Get current user UID (auth required)
+- `POST /api/edit-profile` - Edit user profile (auth required)
+- `POST /api/upload-profile-image` - Upload profile image (auth required)
+- `GET /api/check-information` - Check if user profile is complete (auth required)
+
+### Fund Management
+- `POST /api/create-fund` - Create a new fund (auth required, image upload)
+- `POST /api/update-fund` - Update fund details (auth required)
+- `GET /api/fund/:fund_id` - Get fund details by ID (auth required)
+- `GET /api/funds/all` - List all funds
+- `GET /api/funds/limited` - List limited number of funds (default 9)
+- `POST /api/filter-category` - Filter funds by category
+
+### Donations & Withdrawals
+- `POST /api/donate` - Make a donation to a fund (auth required)
+- `POST /api/withdraw` - Withdraw from a fund (auth required)
+- `GET /api/bills` - Get user's bills/transactions (auth required)
+
+### Miscellaneous
+- `GET /api/healthcheck` - Check database connection
+
+> **Note:** Most endpoints that modify or access sensitive data require authentication via JWT (cookie-based).
 
 ## Contributing
 Feel free to open issues or pull requests for improvements!
