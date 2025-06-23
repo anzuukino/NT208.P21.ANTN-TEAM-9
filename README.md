@@ -15,7 +15,7 @@ The project is organized into separate services for the frontend, backend, smart
 
 ## Group & Project Information
 
-- **Group:** 8
+- **Group:** 9
 - **Members:**
   - Ngô Phúc Dương - 23520350
   - Nguyễn Thị Trúc Ly - 23520908
