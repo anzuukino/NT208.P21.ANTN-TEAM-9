@@ -91,7 +91,7 @@ const ProfilePage = () => {
       setOriginalProfile(updatedProfile);
       setIsModified(false);
     } catch (err: any) {
-      alert("Error saving changes: " + err.message);
+      // alert("Error saving changes: " + err.message);
     }
   };
 

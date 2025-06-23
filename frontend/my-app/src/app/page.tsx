@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Card from "@/components/Card";
 import { MyNavBar } from "@/components/Header";
 import Link from "next/link";
+import { ethers } from "ethers";
 
 interface User {
   firstname: string;
@@ -32,6 +33,12 @@ export default function Home() {
   const [userError, setUserError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const router = useRouter();
+
+  function hashUUID(uuid: string): bigint{
+    const hashed = ethers.keccak256(ethers.toUtf8Bytes(uuid));
+    const bigNumber = BigInt(hashed.slice(0, 34));
+    return bigNumber;
+  }
 
   const fetchFunds = async (category: string | null = null) => {
     try {
@@ -190,6 +197,7 @@ export default function Home() {
                 <div key={fund.fundID}>
                   <Link href={`/fund?fund=${fund.fundID}`}>
                     <Card
+                      fundId={hashUUID(fund.fundID.toString())}
                       title={fund.title}
                       text={fund.description}
                       img={fund.image}

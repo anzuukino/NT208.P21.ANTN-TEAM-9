@@ -74,10 +74,10 @@ const FundProgressComponent: React.FC<FundProgressProps> = ({
       setLoading(true);
       
       // Connect to provider
-      const provider = new ethers.JsonRpcProvider("http://localhost:8545"); // Replace with your provider URL
+      const provider = new ethers.JsonRpcProvider("https://sepolia.infura.io/v3/ae28fe7ffab648c1a49c262c13a52dc8"); // Replace with your provider URL
       
       // Create contract instance
-      const contract = new ethers.Contract("0x5fbdb2315678afecb367f032d93f642f64180aa3", FundManagerArtifact.abi, provider);
+      const contract = new ethers.Contract("0xd630d79883E81b5b6e210633a182566Cb02dd969", FundManagerArtifact.abi, provider);
       
       // Fetch fund data (adjust function name based on your contract)
       const fundData = await contract.GetFund(fundId);
@@ -141,7 +141,6 @@ const FundProgressComponent: React.FC<FundProgressProps> = ({
   return (
     <div>
       <div className="mb-4">
-        <p>Fund ID: {fund.fID}</p>
         <p>Current Phase: {fund.current_phase + 1} of {fund.no_phase}</p>
         <p>Raised: {formatVND(fund.current_money_vnd)} ({fund.current_money} ETH)</p>
         <p>Target: {formatVND(fund.target_money_vnd)} ({fund.target_money} ETH)</p>

@@ -22,11 +22,12 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import FundManagerArtifact from '../artifacts/contracts/Fund.sol/FundManager.json' with {type: 'json'};
 import FundProgressComponent from "@/components/FundProgress";
+import MarkdownRenderer from "@/components/Markdown";
 
 require('dotenv').config({ path: '../../../.env' });
 
-const INFURA_API_KEY = process.env.NEXT_PUBLIC_INFURA_API_KEY;
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+const INFURA_API_KEY = "ae28fe7ffab648c1a49c262c13a52dc8";
+const CONTRACT_ADDRESS = "0xd630d79883E81b5b6e210633a182566Cb02dd969";
 const CONTRACT_ABI = FundManagerArtifact.abi;
 
 const newFund = {
@@ -732,14 +733,15 @@ const FundDetail = () => {
               )}
             </div>
             <div className="flex-1 py-4 text-2xl sm:!py-0">
-              <h5>{fund?.title}</h5>
+              <h5><MarkdownRenderer markdownText={fund?.title || ''} /></h5>
               <small>{`${dayLeft(fund?.deadline).toString()} days left`}</small>
             </div>
           </div>
 
           <div className="text-lg py-4 sm:text-2xl">
-            <div>{`Project description: ${fund?.description}`}</div>
-          </div>
+            <div>{`Project description:`}</div>
+            <MarkdownRenderer markdownText={fund?.description || ''} />
+          </div> 
           <div className="w-full rounded mt-2 my-6">
             <FundProgressComponent fundId={hashUUID(fundID)}></FundProgressComponent>
           </div>

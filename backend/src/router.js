@@ -69,7 +69,7 @@ router.get('/api/healthcheck', async (req, res) => {
 router.get("/api/auth/google", async (req, res) => {
     const code = req.query.code;
     try {
-        const redirectURL = "http://localhost:3000/api/auth/google"
+        const redirectURL = "https://onlyfund.cloud/api/auth/google"
         const client = new OAuth2Client(
             GoogleClientID,
             GoogleClientSecret,
@@ -116,10 +116,10 @@ router.get("/api/auth/google", async (req, res) => {
 });
 
 router.post("/api/oauth", async (req, res) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    res.header("Access-Control-Allow-Origin", "https://onlyfund.cloud");
     res.header("Referrer-Policy", "no-referrer-when-downgrade");
 
-    const redirectURL = "http://localhost:3000/api/auth/google"
+    const redirectURL = "https://onlyfund.cloud/api/auth/google"
 
     const client = new OAuth2Client(
         GoogleClientID,
@@ -190,8 +190,8 @@ router.post("/api/create-fund", auth, upload, async (req, res) => {
             return res.status(400).json({ error: `Missing required fields: ${missingFields.join(", ")}` });
         }
         
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: "At least one image is required." });
+        if (!req.files || req.files.length <= 1) {
+            return res.status(400).json({ error: "At least two images is required." });
         }
 
         let { title, category, description, goal, deadline, donationPlan } = req.body;

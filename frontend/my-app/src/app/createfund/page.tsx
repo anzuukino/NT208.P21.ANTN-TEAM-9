@@ -20,11 +20,11 @@ import dotenv from "dotenv";
 import FundManagerArtifact from '../artifacts/contracts/Fund.sol/FundManager.json' with  {type: 'json'};
 import { BigNumberish } from "ethers";
 
-require('dotenv').config({ path: '../../../.env' });
+require('dotenv').config({ path: '../../.env' });
 
-const INFURA_API_KEY = process.env.INFURA_API_KEY;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+const INFURA_API_KEY = "ae28fe7ffab648c1a49c262c13a52dc8";
+// const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const CONTRACT_ADDRESS = "0xd630d79883E81b5b6e210633a182566Cb02dd969";
 const CONTRACT_ABI = FundManagerArtifact.abi;
 
 
@@ -135,7 +135,8 @@ function PostWriter() {
           const accounts: any = await windowWithEthereum.ethereum?.request({ method: 'eth_requestAccounts' });
 
           if (accounts.length < 0) {
-            throw new Error("No accounts found. Please connect your MetaMask wallet.");
+            alert("No accounts found. Please connect your MetaMask wallet.");
+            router.push("/")
           }
           const chainId = await windowWithEthereum.ethereum?.request({ method: 'eth_chainId' });
 
@@ -165,7 +166,8 @@ function PostWriter() {
         }
       }
       else {
-        showError("MetaMask is not installed. Please install MetaMask to use this dApp.");
+        alert("MetaMask is not installed. Please install MetaMask to use this dApp.");
+        router.push("/");
       }
     };
 
@@ -430,7 +432,7 @@ function PostWriter() {
     }
 
     if (!formData.files || formData.files.length === 0) {
-      alert("Please upload at least one image");
+      alert("Please upload at least two images");
       return;
     }
 
@@ -465,7 +467,7 @@ function PostWriter() {
         const receipt = await transaction?.wait();
         console.log("Transaction receipt:", receipt);
         if (receipt?.status !== 1) {
-          alert('error message: '+ receipt?.status.toString());
+          // alert('error message: '+ receipt?.status.toString());
           return;
         }
         router.push(`/fund?fund=${fundID}`);
@@ -485,19 +487,21 @@ function PostWriter() {
   }
 
   return (
-    <div>
-      <MyNavBar></MyNavBar>
-      <div className="min-h-screen bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: "url('/bgtree2.jpg')" }}>
-      <div className="min-h-full bg-gradient-to-br from-[#f5f2e9] to-[#F9FAFB] flex items-center justify-center p-4 font-[nunito]">
-        <div className="bg-gradient-to-br from-[#f0f2e9] to-[#f1f4ea] rounded-2xl p-6 w-screen h-screen space-y-6 container">
+  <div className="flex flex-col min-h-screen">
+    {/* Navigation Bar */}
+    <MyNavBar />
+
+    {/* Main Content */}
+    <div
+      className="flex-grow bg-cover bg-center flex items-center justify-center"
+      style={{ backgroundImage: "url('/bgtree2.jpg')" }}
+    >
+      <div className="w-full max-w-7xl bg-gradient-to-br from-[#f5f2e9] to-[#F9FAFB] flex items-center justify-center p-4 font-[nunito]">
+        <div className="bg-gradient-to-br from-[#f0f2e9] to-[#f1f4ea] rounded-2xl p-6 w-full max-h-[80vh] overflow-y-auto space-y-6">
           <StepIndicator
-            steps={[
-              "Write your story",
-              "Give us your plan",
-              "Additional information",
-            ]}
+            steps={["Write your story", "Give us your plan", "Additional information"]}
             currentStep={step}
-          ></StepIndicator>
+          />
           <AnimatePresence mode="wait">
             {step === 0 && (
               <motion.div
@@ -506,18 +510,18 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                <div className="bg-white rounded-2xl shadow-md p-6 w-[80vw] h-[100vh] space-y-6 container">
+                <div className="bg-white rounded-2xl shadow-md p-6 w-full max-w-4xl space-y-6">
                   <h1 className="text-3xl font-semibold text-green-700 text-center">
                     Tell us your story
                   </h1>
-                  <div className="border border-green-300 rounded-md w-[100%] min-h-[3rem] overflow-auto p-2 text-gray-900">
+                  <div className="border border-green-300 rounded-md w-full min-h-[3rem] p-2 text-gray-900">
                     <HeadingEditor
                       value={formData.title}
                       onChange={handleChange}
                       name="title"
                     />
                   </div>
-                  <div className="border border-green-300 rounded-md w-[100%] min-h-[32rem] max-h-[8rem] overflow-auto p-2 text-gray-900">
+                  <div className="border border-green-300 rounded-md w-full min-h-[12rem] max-h-[20rem] overflow-y-auto p-2 text-gray-900">
                     <CustomEditor
                       value={formData.description}
                       onChange={handleChange}
@@ -542,11 +546,10 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                <div className="h-80vh w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl flex flex-col">
                   <h1 className="text-2xl font-bold text-center mb-6 text-gray-900">
                     Charity Fundraising Campaign
                   </h1>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -556,10 +559,9 @@ function PostWriter() {
                         type="date"
                         value={currentDate}
                         onChange={(e) => setCurrentDate(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900" 
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Amount (VND)
@@ -570,11 +572,10 @@ function PostWriter() {
                         onChange={(e) => setAmount(e.target.value)}
                         min="1"
                         placeholder="Enter donation amount"
-                        className="text-gray-900 w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
                     </div>
                   </div>
-
                   <button
                     onClick={handleAddDate}
                     disabled={!currentDate || !amount}
@@ -582,15 +583,12 @@ function PostWriter() {
                   >
                     Add to Campaign
                   </button>
-
-                  <div className="flex-1 overflow-auto">
+                  <div className="flex-1 overflow-y-auto max-h-[20rem]">
                     <h2 className="text-lg font-semibold mb-3 text-gray-900">
                       Selected Dates & Amounts
                     </h2>
                     {selectedDates.length === 0 ? (
-                      <p className="text-gray-500 italic">
-                        No dates selected yet
-                      </p>
+                      <p className="text-gray-500 italic">No dates selected yet</p>
                     ) : (
                       <div className="space-y-2">
                         {selectedDates.map((item, index) => (
@@ -617,7 +615,6 @@ function PostWriter() {
                       </div>
                     )}
                   </div>
-
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-gray-900">
@@ -628,7 +625,6 @@ function PostWriter() {
                       </span>
                     </div>
                   </div>
-
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Campaign Deadline
@@ -638,11 +634,10 @@ function PostWriter() {
                       name="deadline"
                       value={formData.deadline}
                       onChange={handleChange}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="text-gray-900 w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min={new Date().toISOString().split("T")[0]}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
                   </div>
-
                   <div className="flex space-x-4 mt-6">
                     <button
                       onClick={prevStep}
@@ -669,7 +664,7 @@ function PostWriter() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
               >
-                <div className="h-80vh w-full sm:w-80vw bg-white rounded-lg shadow-lg p-8 flex flex-col">
+                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-4xl flex flex-col">
                   <div className="m-8">
                     <form className="max-w-sm mx-auto">
                       <label
@@ -683,7 +678,7 @@ function PostWriter() {
                         name="category"
                         value={formData.category}
                         onChange={handleChange}
-                        className="text-l bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                        className="text-lg bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                         required
                       >
                         <option value="" disabled>
@@ -697,7 +692,6 @@ function PostWriter() {
                       </select>
                     </form>
                   </div>
-                  
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Upload Cover Image
@@ -707,7 +701,7 @@ function PostWriter() {
                       multiple
                       onChange={(e) => {
                         if (e.target.files) {
-                          handleFileChange(Array.from(e.target.files))
+                          handleFileChange(Array.from(e.target.files));
                         }
                       }}
                       accept="image/*"
@@ -715,20 +709,17 @@ function PostWriter() {
                       required
                     />
                   </div>
-                  
                   {loading && (
                     <div className="text-center my-4">
                       <p>Submitting your campaign...</p>
                     </div>
                   )}
-                  
                   {error && (
                     <div className="text-red-500 text-center my-4">
                       <p>{error}</p>
                     </div>
                   )}
-
-                  <div className="mt-auto">
+                  <div className="mt-6">
                     <div className="flex space-x-4">
                       <button
                         onClick={prevStep}
@@ -745,12 +736,8 @@ function PostWriter() {
                       </button>
                     </div>
                   </div>
-                  {error && <p className="text-red-500 text-center">{error}</p>}
-                  {loading && (
-                    <p className="text-gray-500 text-center">Loading...</p>
-                  )}
                   {success && (
-                    <p className="text-green-500 text-center">
+                    <p className="text-green-500 text-center mt-4">
                       Fund created successfully!
                     </p>
                   )}
@@ -759,52 +746,109 @@ function PostWriter() {
             )}
           </AnimatePresence>
         </div>
-        <Footer></Footer>
       </div>
-
-            {/* ==============================HIDDEN TOAST================================ */}
-      {
-        error_msg !== "" &&
-        (<div id="toast-danger" className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
-          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
-            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
-            </svg>
-            <span className="sr-only">Error icon</span>
-          </div>
-          <div id="danger-text" className="ms-3 text-sm font-normal"> {error_msg?.toString()} </div>
-          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-danger" aria-label="Close">
-            <span className="sr-only">Close</span>
-            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-            </svg>
-          </button>
-        </div>)
-      }
-
-      {
-        success_msg !== "" &&
-        (<div id="toast-success" className=" fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
-          <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
-            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
-            </svg>
-            <span className="sr-only">Check icon</span>
-          </div>
-          <div id="success-text" className="ms-3 text-sm font-normal">{success_msg?.toString()}</div>
-          <button type="button" className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
-            <span className="sr-only">Close</span>
-            <svg className="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-            </svg>
-          </button>
-        </div>
-        )
-      }
     </div>
+
+    {/* Footer */}
+    <Footer />
+
+    {/* Toasts */}
+    {error_msg !== "" && (
+      <div
+        id="toast-danger"
+        className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800"
+        role="alert"
+      >
+        <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg dark:bg-red-800 dark:text-red-200">
+          <svg
+            className="w-5 h-5"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
+          </svg>
+          <span className="sr-only">Error icon</span>
+        </div>
+        <div id="danger-text" className="ms-3 text-sm font-normal">
+          {error_msg?.toString()}
+        </div>
+        <button
+          type="button"
+          className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700"
+          data-dismiss-target="#toast-danger"
+          aria-label="Close"
+        >
+          <span className="sr-only">Close</span>
+          <svg
+            className="w-3 h-3"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 14 14"
+          >
+            <path
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+            />
+          </svg>
+        </button>
+      </div>
+    )}
+
+    {success_msg !== "" && (
+      <div
+        id="toast-success"
+        className="fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800"
+        role="alert"
+      >
+        <div className="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+          <svg
+            className="w-5 h-5"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+          </svg>
+          <span className="sr-only">Check icon</span>
+        </div>
+        <div id="success-text" className="ms-3 text-sm font-normal">
+          {success_msg?.toString()}
+        </div>
+        <button
+          type="button"
+          className="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700"
+          data-dismiss-target="#toast-success"
+          aria-label="Close"
+        >
+          <span className="sr-only">Close</span>
+          <svg
+            className="w-3 h-3"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 14 14"
+          >
+            <path
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+            />
+          </svg>
+        </button>
+      </div>
+    )}
   </div>
-  );
-}
+);
+};
 
 const Wrapper = () => {
   return (
